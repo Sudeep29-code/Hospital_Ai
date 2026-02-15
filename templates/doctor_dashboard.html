@@ -16,6 +16,21 @@
         <h3>📊 Doctor Analytics</h3>
         <p>Average Consultation Time: {{ avg_time }} mins</p>
         <p>Utilization: {{ utilization }}%</p>
+        <hr>
+
+        <h3>🤖 AI Optimization Status</h3>
+
+        <p><strong>Fairness Index:</strong> {{ fairness_index }}</p>
+        <p><strong>Optimization Score:</strong> {{ optimization_score }}/100</p>
+        {% if optimization_score > 80 %}
+        <p style="color:green;"><strong>🟢 System Stable</strong></p>
+        {% elif optimization_score > 50 %}
+        <p style="color:orange;"><strong>🟠 Moderate Load</strong></p>
+        {% else %}
+        <p style="color:red;"><strong>🔴 Critical Optimization Needed</strong></p>
+        {% endif %}
+
+
 
         {% if bottleneck %}
         <div style="background:#ffcccc;padding:10px;margin:10px;">
@@ -39,22 +54,22 @@
                 </tr>
 
                 {% if regular_patients %}
-                    {% for patient in regular_patients %}
-                    <tr>
-                        <td>{{ patient.id }}</td>
-                        <td>{{ patient.name }}</td>
-                        <td>{{ patient.priority }}</td>
-                        <td>
-                            <a href="/complete/{{ patient.id }}">
-                                <button class="btn btn-complete">Completed</button>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                {% for patient in regular_patients %}
+                <tr>
+                    <td>{{ patient.id }}</td>
+                    <td>{{ patient.name }}</td>
+                    <td>{{ patient.priority }}</td>
+                    <td>
+                        <a href="/complete/{{ patient.id }}">
+                            <button class="btn btn-complete">Completed</button>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
                 {% else %}
-                    <tr>
-                        <td colspan="4" class="no-data">No Regular Patients</td>
-                    </tr>
+                <tr>
+                    <td colspan="4" class="no-data">No Regular Patients</td>
+                </tr>
                 {% endif %}
             </table>
         </div>
@@ -72,22 +87,22 @@
                 </tr>
 
                 {% if emergency_patients %}
-                    {% for patient in emergency_patients %}
-                    <tr>
-                        <td>{{ patient.id }}</td>
-                        <td>{{ patient.name }}</td>
-                        <td class="priority-high">{{ patient.priority }}</td>
-                        <td>
-                            <a href="/complete/{{ patient.id }}">
-                                <button class="btn btn-complete">Completed</button>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                {% for patient in emergency_patients %}
+                <tr>
+                    <td>{{ patient.id }}</td>
+                    <td>{{ patient.name }}</td>
+                    <td class="priority-high">{{ patient.priority }}</td>
+                    <td>
+                        <a href="/complete/{{ patient.id }}">
+                            <button class="btn btn-complete">Completed</button>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
                 {% else %}
-                    <tr>
-                        <td colspan="4" class="no-data">No Emergency Patients</td>
-                    </tr>
+                <tr>
+                    <td colspan="4" class="no-data">No Emergency Patients</td>
+                </tr>
                 {% endif %}
             </table>
         </div>
@@ -95,4 +110,5 @@
     </div>
 
 </body>
+
 </html>

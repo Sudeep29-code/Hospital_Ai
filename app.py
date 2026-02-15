@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session, send_file,
 import mysql.connector
 import os
 from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 
 import joblib
 import numpy as np
@@ -12,6 +13,10 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import A4
+
+
+
+
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey123"
@@ -165,7 +170,6 @@ def auto_reassign_patients(department):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    # Get doctors in department
     cursor.execute("""
         SELECT id
         FROM doctors
@@ -181,7 +185,6 @@ def auto_reassign_patients(department):
 
     doctor_load = {}
 
-    # 🔥 Count active patients per doctor
     for doc in doctors:
         cursor.execute("""
             SELECT COUNT(*) AS active_count
@@ -190,38 +193,170 @@ def auto_reassign_patients(department):
             AND status IN ('waiting','emergency')
         """, (doc["id"],))
 
-        count = cursor.fetchone()["active_count"]
-        doctor_load[doc["id"]] = count
+        doctor_load[doc["id"]] = cursor.fetchone()["active_count"]
 
     highest_doc = max(doctor_load, key=doctor_load.get)
     lowest_doc = min(doctor_load, key=doctor_load.get)
 
-    # If difference >= 2 patients, shift
-    if highest_doc != lowest_doc and doctor_load[highest_doc] - doctor_load[lowest_doc] >= 2:
-
+    if doctor_load[highest_doc] - doctor_load[lowest_doc] >= 2:
 
         cursor.execute("""
-            SELECT id FROM patients
+            SELECT id, name
+            FROM patients
             WHERE doctor_id=%s
             AND priority='LOW'
             AND status='waiting'
-            LIMIT 2
+            LIMIT 1
         """, (highest_doc,))
 
-        low_patients = cursor.fetchall()
+        patient = cursor.fetchone()
 
-        for patient in low_patients:
+        if patient:
+
+            # 🔥 Shift patient
             cursor.execute("""
                 UPDATE patients
                 SET doctor_id=%s
                 WHERE id=%s
             """, (lowest_doc, patient["id"]))
-        
+
+            # 🔥 Store explanation log
+            reason = (
+                f"Patient {patient['name']} shifted "
+                f"from Doctor {highest_doc} "
+                f"to Doctor {lowest_doc} "
+                f"due to load imbalance "
+                f"({doctor_load[highest_doc]} vs {doctor_load[lowest_doc]} patients)"
+            )
+
+            cursor.execute("""
+                INSERT INTO reassignment_logs
+                (department, patient_id, from_doctor, to_doctor, reason)
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                department,
+                patient["id"],
+                highest_doc,
+                lowest_doc,
+                reason
+            ))
 
     conn.commit()
     cursor.close()
     conn.close()
 
+# ========================
+# Fairness Calculation
+# ========================
+def calculate_fairness(department):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id FROM doctors
+        WHERE department=%s
+    """, (department,))
+
+    doctors = cursor.fetchall()
+
+    loads = []
+
+    for doc in doctors:
+        cursor.execute("""
+            SELECT COUNT(*) AS active_count
+            FROM patients
+            WHERE doctor_id=%s
+            AND status IN ('waiting','emergency')
+        """, (doc["id"],))
+
+        loads.append(cursor.fetchone()["active_count"])
+
+    cursor.close()
+    conn.close()
+
+    if not loads:
+        return 0
+
+    return max(loads) - min(loads)
+
+
+# ========================
+# AI Optimization Score
+# ========================
+def calculate_optimization_score(department):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT * FROM patients
+        WHERE department=%s
+        AND status IN ('waiting','emergency')
+    """, (department,))
+
+    patients = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    if not patients:
+        return 100
+
+    total_wait = 0
+
+    for p in patients:
+        predicted = predict_duration(
+            p["age"],
+            p["oxygen"],
+            p["bp"],
+            p["temperature"],
+            p["department"],
+            p["priority"],
+            p["disease"]
+        )
+        total_wait += predicted
+
+    avg_wait = total_wait / len(patients)
+
+    # Convert wait to optimization score (lower wait = better score)
+    score = max(0, 100 - avg_wait)
+
+    return round(score, 2)
+
+
+
+
+# ==============================
+# TRUE CONTINUOUS OPTIMIZER
+# ==============================
+
+def continuous_optimizer():
+    print("Running background optimization...")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT department FROM doctors")
+    departments = cursor.fetchall()
+
+    for dept in departments:
+        auto_reassign_patients(dept[0])
+
+    cursor.close()
+    conn.close()
+
+
+scheduler = BackgroundScheduler()
+
+scheduler.add_job(
+    func=continuous_optimizer,
+    trigger="interval",
+    seconds=20
+)
+
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    scheduler.start()
 
 
 # DOCTOR DASHBOARD
@@ -309,21 +444,42 @@ def doctor_dashboard():
             f"⚠ Estimated delay: {round(predicted_delay, 2)} minutes. "
             f"Consider shifting LOW priority patients or adding staff."
         )
+        # 🔥 AUTO OPTIMIZE WHEN OVERLOADED
+        auto_reassign_patients(department)
+    # 🔥 Fetch recent reassignment logs
+    cursor.execute("""
+        SELECT * FROM reassignment_logs
+        WHERE department=%s
+        ORDER BY created_at DESC
+        LIMIT 5
+    """, (department,))
+
+    logs = cursor.fetchall()
+
 
     cursor.close()
     conn.close()
 
+    fairness_index = calculate_fairness(department)
+    optimization_score = calculate_optimization_score(department)
+
+
     return render_template(
-        "doctor_dashboard.html",
-        doctor_name=session.get("doctor_name"),
-        department=department,
-        regular_patients=regular_patients,
-        emergency_patients=emergency_patients,
-        avg_time=round(avg_time, 2),
-        utilization=round(utilization, 2),
-        bottleneck=bottleneck,
-        recommendation=recommendation
-    )
+    "doctor_dashboard.html",
+    doctor_name=session.get("doctor_name"),
+    department=department,
+    regular_patients=regular_patients,
+    emergency_patients=emergency_patients,
+    avg_time=round(avg_time, 2),
+    utilization=round(utilization, 2),
+    bottleneck=bottleneck,
+    recommendation=recommendation,
+    logs=logs,
+    fairness_index=fairness_index,
+    optimization_score=optimization_score
+)
+
+
 
 # complete
 @app.route("/complete/<int:patient_id>")
@@ -355,6 +511,10 @@ def complete_patient(patient_id):
     """, (consultation_time, session["doctor_id"]))
 
     conn.commit()
+
+    # 🔥 REAL-TIME RE-OPTIMIZATION
+    auto_reassign_patients(session["department"])
+
     cursor.close()
     conn.close()
 
@@ -452,6 +612,9 @@ def register():
 
         conn.commit()
         patient_id = cursor.lastrowid
+        # 🔥 Trigger dynamic re-optimization
+        auto_reassign_patients(department)
+
 
         # ------------------------------
         # Queue Position
