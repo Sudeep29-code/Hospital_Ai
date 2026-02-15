@@ -3,6 +3,10 @@ import mysql.connector
 import os
 from datetime import datetime
 
+import joblib
+import numpy as np
+
+
 # ReportLab Imports
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
@@ -11,6 +15,15 @@ from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey123"
+
+# ========================
+# Load AI Model
+# ========================
+model = joblib.load("duration_model.pkl")
+le_dept = joblib.load("dept_encoder.pkl")
+le_priority = joblib.load("priority_encoder.pkl")
+le_disease = joblib.load("disease_encoder.pkl")
+
 
 
 # ========================
@@ -70,6 +83,39 @@ def get_db():
         password="kaibalya123",
         database="hospital_db"
     )
+
+
+# ========================
+# AI Duration Prediction
+# ========================
+def predict_duration(age, oxygen, bp, temperature, department, priority, disease):
+
+    # Safe encoding for department
+    if department in le_dept.classes_:
+        dept_encoded = le_dept.transform([department])[0]
+    else:
+        dept_encoded = 0
+
+    # Safe encoding for priority
+    if priority in le_priority.classes_:
+        priority_encoded = le_priority.transform([priority])[0]
+    else:
+        priority_encoded = 0
+
+    # Safe encoding for disease
+    disease = disease.lower()
+    if disease in le_disease.classes_:
+        disease_encoded = le_disease.transform([disease])[0]
+    else:
+        disease_encoded = 0
+
+    features = np.array([[age, oxygen, bp, temperature,
+                          dept_encoded, priority_encoded, disease_encoded]])
+
+    prediction = model.predict(features)[0]
+
+    return round(float(prediction), 2)
+
 
 # ========================
 # Home Page
@@ -169,14 +215,18 @@ def complete_patient(patient_id):
     if "doctor_id" not in session:
         return redirect("/doctor_login")
 
+    import random
+    consultation_time = random.randint(5, 25)
+
     conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE patients
-        SET status='completed'
+        SET status='completed',
+            consultation_duration=%s
         WHERE id=%s
-    """, (patient_id,))
+    """, (consultation_time, patient_id))
 
     conn.commit()
 
@@ -184,6 +234,7 @@ def complete_patient(patient_id):
     conn.close()
 
     return redirect("/doctor_dashboard")
+
 
 
 # ========================
@@ -198,6 +249,7 @@ def register():
         aadhaar = request.form["aadhaar"]
         gender = request.form["gender"]
         dob = request.form["dob"]
+        disease = request.form["disease"]
 
         # Calculate Age
         birth_date = datetime.strptime(dob, "%Y-%m-%d")
@@ -216,102 +268,71 @@ def register():
         bp = float(request.form["bp"])
         temperature = float(request.form["temperature"])
 
-        # ========================
-        # SMART TRIAGE LOGIC
-        # ========================
-
-        if age < 18:
-
-            if oxygen < 90 or temperature >= 38.5 or bp < 70 or bp > 140:
-                priority = "HIGH"
-                status = "emergency"
-
-            elif 90 <= oxygen < 94 or 37.6 <= temperature < 38.5:
-                priority = "MEDIUM"
-                status = "waiting"
-
-            else:
-                priority = "LOW"
-                status = "waiting"
-
-        else:
-
-            if oxygen < 85 or temperature >= 39.5 or bp >= 180 or bp < 90:
-                priority = "HIGH"
-                status = "emergency"
-
-            elif 85 <= oxygen < 92 or 38.5 <= temperature < 39.5 or 140 <= bp < 180:
-                priority = "MEDIUM"
-                status = "waiting"
-
-            else:
-                priority = "LOW"
-                status = "waiting"
-
-        # ========================
-        # DATABASE INSERT
-        # ========================
+        # Priority using your function
+        priority = calculate_priority(age, oxygen, temperature, bp, disease)
+        status = "emergency" if priority == "HIGH" else "waiting"
 
         conn = get_db()
         cursor = conn.cursor()
 
+        # ✅ FIXED INSERT (disease added correctly)
         cursor.execute("""
             INSERT INTO patients
             (name, age, aadhaar, gender, dob, phone, whatsapp,
              blood_group, address, department,
-             priority, status, oxygen, bp, temperature)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+             disease, priority, status, oxygen, bp, temperature)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             name, age, aadhaar, gender, dob, phone, whatsapp,
             blood_group, address, department,
-            priority, status, oxygen, bp, temperature
+            disease, priority, status, oxygen, bp, temperature
         ))
 
         conn.commit()
         patient_id = cursor.lastrowid
 
-    # ========================
-    # QUEUE POSITION
-    # ========================
+        # Queue Position
+        cursor.execute("""
+            SELECT COUNT(*) FROM patients
+            WHERE department=%s
+            AND status='waiting'
+            AND id <= %s
+        """, (department, patient_id))
 
-    cursor.execute("""
-        SELECT COUNT(*) FROM patients
-        WHERE department=%s
-        AND status='waiting'
-        AND id <= %s
-    """, (department, patient_id))
+        queue_number = cursor.fetchone()[0]
 
-    queue_number = cursor.fetchone()[0]
+        # AI Prediction
+        predicted_time = predict_duration(
+            age, oxygen, bp, temperature,
+            department, priority, disease
+        )
 
-    estimated_wait = queue_number * 3   # 3 minutes per patient
+        estimated_wait = queue_number * predicted_time
 
+        # Assign Doctor
+        cursor.execute("""
+            SELECT name FROM doctors
+            WHERE department=%s
+            LIMIT 1
+        """, (department,))
 
-    # ========================
-    # ASSIGN DOCTOR
-    # ========================
+        doctor_data = cursor.fetchone()
+        doctor_name = doctor_data[0] if doctor_data else "Not Assigned"
 
-    cursor.execute("""
-        SELECT name FROM doctors
-        WHERE department=%s
-        LIMIT 1
-    """, (department,))
+        cursor.close()
+        conn.close()
 
-    doctor_data = cursor.fetchone()
-    doctor_name = doctor_data[0] if doctor_data else "Not Assigned"
+        return render_template(
+            "token.html",
+            patient_id=patient_id,
+            doctor_name=doctor_name,
+            department=department,
+            queue_number=queue_number,
+            estimated_wait=round(estimated_wait, 2),
+            priority=priority
+        )
 
-
-    cursor.close()
-    conn.close()
-
-    return render_template(
-        "token.html",
-        patient_id=patient_id,
-        doctor_name=doctor_name,
-        department=department,
-        queue_number=queue_number,
-        estimated_wait=estimated_wait,
-        priority=priority
-    )       
+    return render_template("register.html")
 
 
 # ========================
@@ -337,7 +358,8 @@ def emergency_patient(patient_id):
     cursor.close()
     conn.close()
 
-    return redirect("/dashboard")
+    return redirect("/doctor_dashboard")
+
 
 
 # ========================
