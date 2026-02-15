@@ -157,55 +157,172 @@ def doctor_login():
     return render_template("doctor_login.html")
 
 
+# ========================
+# Automatic Reassignment Engine
+# ========================
+def auto_reassign_patients(department):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    # Get doctors in department
+    cursor.execute("""
+        SELECT id
+        FROM doctors
+        WHERE department=%s
+    """, (department,))
+
+    doctors = cursor.fetchall()
+
+    if len(doctors) < 2:
+        cursor.close()
+        conn.close()
+        return
+
+    doctor_load = {}
+
+    # 🔥 Count active patients per doctor
+    for doc in doctors:
+        cursor.execute("""
+            SELECT COUNT(*) AS active_count
+            FROM patients
+            WHERE doctor_id=%s
+            AND status IN ('waiting','emergency')
+        """, (doc["id"],))
+
+        count = cursor.fetchone()["active_count"]
+        doctor_load[doc["id"]] = count
+
+    highest_doc = max(doctor_load, key=doctor_load.get)
+    lowest_doc = min(doctor_load, key=doctor_load.get)
+
+    # If difference >= 2 patients, shift
+    if highest_doc != lowest_doc and doctor_load[highest_doc] - doctor_load[lowest_doc] >= 2:
 
 
+        cursor.execute("""
+            SELECT id FROM patients
+            WHERE doctor_id=%s
+            AND priority='LOW'
+            AND status='waiting'
+            LIMIT 2
+        """, (highest_doc,))
+
+        low_patients = cursor.fetchall()
+
+        for patient in low_patients:
+            cursor.execute("""
+                UPDATE patients
+                SET doctor_id=%s
+                WHERE id=%s
+            """, (lowest_doc, patient["id"]))
+        
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+
+# DOCTOR DASHBOARD
 # DOCTOR DASHBOARD
 @app.route("/doctor_dashboard")
 def doctor_dashboard():
 
-    if "doctor_id" not in session:
+    if "doctor_id" not in session or "department" not in session:
         return redirect("/doctor_login")
 
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    # 🔹 Regular Patients
+    try:
+        doctor_id = int(session["doctor_id"])
+    except:
+        return redirect("/doctor_login")
+
+    department = session["department"]
+
+    print("SESSION DOCTOR ID:", doctor_id)
+
+    # 🔥 Fetch patients assigned to this doctor
     cursor.execute("""
-        SELECT id, name, priority
+        SELECT * FROM patients
+        WHERE doctor_id = %s
+        AND status IN ('waiting', 'emergency')
+        ORDER BY
+            CASE
+                WHEN priority = 'HIGH' THEN 1
+                WHEN priority = 'MEDIUM' THEN 2
+                ELSE 3
+            END,
+            id ASC
+    """, (doctor_id,))
+
+    patients = cursor.fetchall()
+
+    # 🔥 SPLIT PATIENTS CORRECTLY
+    regular_patients = [p for p in patients if p["status"] == "waiting"]
+    emergency_patients = [p for p in patients if p["status"] == "emergency"]
+
+    # 🔥 Doctor stats
+    cursor.execute("""
+        SELECT total_consultation_time, patients_completed
+        FROM doctors
+        WHERE id = %s
+    """, (doctor_id,))
+
+    doc = cursor.fetchone()
+
+    if not doc:
+        cursor.close()
+        conn.close()
+        return "Doctor not found."
+
+    total_time = doc.get("total_consultation_time", 0) or 0
+    completed = doc.get("patients_completed", 0) or 0
+
+    avg_time = total_time / completed if completed > 0 else 0
+
+    shift_minutes = 480
+    utilization = (total_time / shift_minutes) * 100 if shift_minutes > 0 else 0
+    utilization = min(utilization, 100)
+
+    # 🔥 Department waiting count
+    cursor.execute("""
+        SELECT COUNT(*) AS total_waiting
         FROM patients
-        WHERE department=%s
-        AND status='waiting'
-        AND priority='NORMAL'
-        ORDER BY id ASC
-    """, (session["department"],))
+        WHERE department = %s
+        AND status = 'waiting'
+    """, (department,))
 
-    regular_patients = cursor.fetchall()
+    waiting_data = cursor.fetchone()
+    total_waiting = waiting_data["total_waiting"] if waiting_data else 0
 
-    # 🔹 Emergency Patients
-    cursor.execute("""
-    SELECT * FROM patients
-    WHERE department = %s
-    AND status IN ('waiting','emergency')
-    ORDER BY
-        CASE
-            WHEN priority = 'HIGH' THEN 1
-            WHEN priority = 'MEDIUM' THEN 2
-            ELSE 3
-        END
-""", (session["department"],))
+    predicted_delay = total_waiting * avg_time
 
+    bottleneck = False
+    recommendation = None
 
-    emergency_patients = cursor.fetchall()
+    if utilization > 85 or total_waiting > 10:
+        bottleneck = True
+        recommendation = (
+            f"⚠ Estimated delay: {round(predicted_delay, 2)} minutes. "
+            f"Consider shifting LOW priority patients or adding staff."
+        )
 
     cursor.close()
     conn.close()
 
     return render_template(
         "doctor_dashboard.html",
-        doctor_name=session["doctor_name"],
-        department=session["department"],
+        doctor_name=session.get("doctor_name"),
+        department=department,
         regular_patients=regular_patients,
-        emergency_patients=emergency_patients
+        emergency_patients=emergency_patients,
+        avg_time=round(avg_time, 2),
+        utilization=round(utilization, 2),
+        bottleneck=bottleneck,
+        recommendation=recommendation
     )
 
 # complete
@@ -221,6 +338,7 @@ def complete_patient(patient_id):
     conn = get_db()
     cursor = conn.cursor()
 
+    # Update patient
     cursor.execute("""
         UPDATE patients
         SET status='completed',
@@ -228,12 +346,20 @@ def complete_patient(patient_id):
         WHERE id=%s
     """, (consultation_time, patient_id))
 
-    conn.commit()
+    # 🔥 Update doctor workload stats
+    cursor.execute("""
+        UPDATE doctors
+        SET total_consultation_time = total_consultation_time + %s,
+            patients_completed = patients_completed + 1
+        WHERE id = %s
+    """, (consultation_time, session["doctor_id"]))
 
+    conn.commit()
     cursor.close()
     conn.close()
 
     return redirect("/doctor_dashboard")
+
 
 
 
@@ -251,7 +377,6 @@ def register():
         dob = request.form["dob"]
         disease = request.form["disease"]
 
-        # Calculate Age
         birth_date = datetime.strptime(dob, "%Y-%m-%d")
         today = datetime.today()
         age = today.year - birth_date.year - (
@@ -268,30 +393,69 @@ def register():
         bp = float(request.form["bp"])
         temperature = float(request.form["temperature"])
 
-        # Priority using your function
         priority = calculate_priority(age, oxygen, temperature, bp, disease)
         status = "emergency" if priority == "HIGH" else "waiting"
 
         conn = get_db()
         cursor = conn.cursor()
 
-        # ✅ FIXED INSERT (disease added correctly)
+        # ------------------------------
+        # 🔥 DOCTOR LOAD BALANCING
+        # ------------------------------
+        cursor.execute("""
+            SELECT id, name, total_consultation_time, patients_completed
+            FROM doctors
+            WHERE department=%s
+        """, (department,))
+
+        doctors = cursor.fetchall()
+
+        selected_doctor = None
+        lowest_load = float('inf')
+
+        for doc in doctors:
+            completed = doc[3] or 0
+            total_time = doc[2] or 0
+
+            avg = total_time / completed if completed > 0 else 0
+
+            if avg < lowest_load:
+                lowest_load = avg
+                selected_doctor = doc
+
+        if selected_doctor:
+            doctor_id = selected_doctor[0]
+            doctor_name = selected_doctor[1]
+        else:
+            doctor_id = None
+            doctor_name = "Not Assigned"
+        # 🔥 Explainable AI Decision
+        if selected_doctor:
+            explanation = f"Assigned to Dr. {doctor_name} due to lowest workload (avg {round(lowest_load,2)} mins per patient)."
+        else:
+            explanation = "No doctor available in this department."
+
+        # ------------------------------
+        # INSERT PATIENT (NOW CORRECT)
+        # ------------------------------
         cursor.execute("""
             INSERT INTO patients
             (name, age, aadhaar, gender, dob, phone, whatsapp,
              blood_group, address, department,
-             disease, priority, status, oxygen, bp, temperature)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+             disease, priority, status, oxygen, bp, temperature, doctor_id)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             name, age, aadhaar, gender, dob, phone, whatsapp,
             blood_group, address, department,
-            disease, priority, status, oxygen, bp, temperature
+            disease, priority, status, oxygen, bp, temperature, doctor_id
         ))
 
         conn.commit()
         patient_id = cursor.lastrowid
 
+        # ------------------------------
         # Queue Position
+        # ------------------------------
         cursor.execute("""
             SELECT COUNT(*) FROM patients
             WHERE department=%s
@@ -301,23 +465,15 @@ def register():
 
         queue_number = cursor.fetchone()[0]
 
+        # ------------------------------
         # AI Prediction
+        # ------------------------------
         predicted_time = predict_duration(
             age, oxygen, bp, temperature,
             department, priority, disease
         )
 
         estimated_wait = queue_number * predicted_time
-
-        # Assign Doctor
-        cursor.execute("""
-            SELECT name FROM doctors
-            WHERE department=%s
-            LIMIT 1
-        """, (department,))
-
-        doctor_data = cursor.fetchone()
-        doctor_name = doctor_data[0] if doctor_data else "Not Assigned"
 
         cursor.close()
         conn.close()
@@ -329,10 +485,13 @@ def register():
             department=department,
             queue_number=queue_number,
             estimated_wait=round(estimated_wait, 2),
-            priority=priority
+            priority=priority,
+            explanation=explanation  
         )
 
+
     return render_template("register.html")
+
 
 
 # ========================
@@ -390,7 +549,18 @@ def live_status(patient_id):
     cursor.close()
     conn.close()
 
-    estimated_wait = queue * 3
+    predicted_time = predict_duration(
+    patient["age"],
+    patient["oxygen"],
+    patient["bp"],
+    patient["temperature"],
+    patient["department"],
+    patient["priority"],
+    patient["disease"]
+)
+
+    estimated_wait = queue * predicted_time
+
 
     return render_template(
         "status.html",
@@ -447,6 +617,30 @@ def download_token(patient_id):
 
     return send_file(filepath, as_attachment=True)
 
+@app.route("/simulate")
+def simulate():
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM patients WHERE status='waiting'")
+    waiting = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM doctors")
+    doctors = cursor.fetchone()[0]
+
+    avg_consult_time = 15
+
+    current_delay = (waiting * avg_consult_time) / doctors if doctors > 0 else 0
+    new_delay = (waiting * avg_consult_time) / (doctors + 1)
+
+    cursor.close()
+    conn.close()
+
+    return f"""
+    Current Estimated Delay: {round(current_delay,2)} minutes<br>
+    If 1 more doctor added → Delay becomes: {round(new_delay,2)} minutes
+    """
 
 
 

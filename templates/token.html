@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Token Generated</title>
 </head>
+
 <body>
 
-<h2>✅ Registration Successful</h2>
-<hr>
+    <h2>✅ Registration Successful</h2>
+    <hr>
 
-<p><b>Patient ID:</b> {{ patient_id }}</p>
-<p><b>Assigned Doctor:</b> {{ doctor_name }}</p>
-<p><b>Department:</b> {{ department }}</p>
-<p><b>Queue Number:</b> {{ queue_number }}</p>
-<p><b>Estimated Wait Time:</b> {{ estimated_wait }} mins</p>
-<p><b>Priority:</b> {{ priority }}</p>
+    <p><b>Patient ID:</b> {{ patient_id }}</p>
+    <p><b>Assigned Doctor:</b> {{ doctor_name }}</p>
+    <p><b>Department:</b> {{ department }}</p>
+    <p><b>Queue Number:</b> {{ queue_number }}</p>
+    <p><b>Estimated Wait Time:</b> {{ estimated_wait }} mins</p>
+    <p style="color:green;">
+        🤖 AI Decision: {{ explanation }}
+    </p>
 
-<hr>
+    <p><b>Priority:</b> {{ priority }}</p>
 
-<a href="/download/{{ patient_id }}">Download Token</a> |
-<a href="/status/{{ patient_id }}">View Live Status</a>
+    <hr>
+
+    <a href="/download/{{ patient_id }}">Download Token</a> |
+    <a href="/status/{{ patient_id }}">View Live Status</a>
 
 </body>
+
 </html>
