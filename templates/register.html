@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Registration</title>
+</head>
+<body>
+
+<h2>Patient Registration Form</h2>
+<hr>
+
+<form method="POST" action="/register">
+
+    Name:<br>
+    <input type="text" name="name" required><br><br>
+
+    Aadhaar Number (Unique ID):<br>
+    <input type="text" name="aadhaar" required><br><br>
+
+    Gender:<br>
+    <select name="gender" required>
+        <option value="">Select</option>
+        <option>Male</option>
+        <option>Female</option>
+        <option>Other</option>
+    </select><br><br>
+
+    DOB:<br>
+    <input type="date" name="dob" required><br><br>
+
+    Phone Number:<br>
+    <input type="text" name="phone" required><br><br>
+
+    WhatsApp Number:<br>
+    <input type="text" name="whatsapp"><br><br>
+
+    Blood Group:<br>
+    <input type="text" name="blood_group"><br><br>
+
+    Address:<br>
+    <textarea name="address"></textarea><br><br>
+
+    Select Department:<br>
+    <select name="department" required>
+        <option value="">Select</option>
+        <option>Cardiology</option>
+        <option>Orthopedics</option>
+        <option>Pediatrics</option>
+        <option>General Medicine</option>
+    </select><br><br>
+
+    <hr>
+    <h3>Vital Signs (For Priority Detection)</h3>
+
+    Oxygen Level (SpO2 %):<br>
+    <input type="number" name="oxygen" min="50" max="100" required><br><br>
+
+    Blood Pressure (Systolic):<br>
+    <input type="number" name="bp" min="50" max="200" required><br><br>
+
+    Temperature (°C):<br>
+    <input type="number" name="temperature" step="0.1" min="30" max="45" required><br><br>
+
+    <button type="submit">Register & Get Token</button>
+
+</form>
+
+</body>
+</html>

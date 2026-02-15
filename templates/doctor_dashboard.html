@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Dashboard</title>
+
+    <!-- Link CSS File -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="header">
+    <h2>Welcome Dr. {{ doctor_name }}</h2>
+    <p>Department: {{ department }}</p>
+</div>
+
+<div class="container">
+
+    <!-- Regular Queue -->
+    <div class="section">
+        <h3>🟢 Regular Queue</h3>
+
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Priority</th>
+                <th>Action</th>
+            </tr>
+
+            {% for patient in regular_patients %}
+            <tr>
+                <td>{{ patient.id }}</td>
+                <td>{{ patient.name }}</td>
+                <td>{{ patient.priority }}</td>
+                <td>
+                    <a href="/complete/{{ patient.id }}">
+                        <button class="btn btn-complete">Completed</button>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="no-data">No Regular Patients</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- Emergency Queue -->
+    <div class="section">
+        <h3 class="emergency-title">🔴 Emergency Queue</h3>
+
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Priority</th>
+                <th>Action</th>
+            </tr>
+
+            {% for patient in emergency_patients %}
+            <tr>
+                <td>{{ patient.id }}</td>
+                <td>{{ patient.name }}</td>
+                <td class="priority-high">{{ patient.priority }}</td>
+                <td>
+                    <a href="/complete/{{ patient.id }}">
+                        <button class="btn btn-complete">Completed</button>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="no-data">No Emergency Patients</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>
