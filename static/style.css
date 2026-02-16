@@ -103,10 +103,20 @@ body {
 
 .hero h1 {
     font-size: 46px;
-    color: #0077cc;
-    margin-bottom: 15px;
-    animation: slideDown 1s ease forwards;
+    font-weight: 700;
+    background: linear-gradient(90deg, #0077cc, #00aaff, #003366);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textShine 4s linear infinite;
 }
+
+@keyframes textShine {
+    to {
+        background-position: 200% center;
+    }
+}
+
 
 .hero p {
     font-size: 18px;
@@ -589,7 +599,6 @@ body:has(.doctor-login-wrapper) {
 /* IMPROVED HOW IT WORKS SECTION */
 /* (ONLY INDEX PAGE – NO OTHER CHANGES) */
 /* ===================================== */
-
 .how-it-works {
     background: #ffffff;
     text-align: center;
@@ -615,13 +624,15 @@ body:has(.doctor-login-wrapper) {
     padding: 35px 25px;
     border-radius: 16px;
     box-shadow: 0 15px 35px rgba(0, 119, 204, 0.12);
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
+    transform-style: preserve-3d;
+    perspective: 1000px;
 }
 
-/* Hover Effect */
+/* PREMIUM 3D Hover Effect */
 .how-it-works .card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 45px rgba(0, 119, 204, 0.25);
+    transform: perspective(800px) rotateX(6deg) translateY(-12px);
+    box-shadow: 0 25px 60px rgba(0, 119, 204, 0.35);
 }
 
 /* Card Titles */
@@ -629,13 +640,26 @@ body:has(.doctor-login-wrapper) {
     font-size: 18px;
     margin-bottom: 15px;
     color: #0077cc;
+    transition: color 0.3s ease;
 }
 
 /* Card Text */
 .how-it-works .card p {
     font-size: 14px;
     color: #555;
+    transition: color 0.3s ease;
 }
+
+/* Optional: Blue background + white text on hover */
+.how-it-works .card:hover {
+    background: #0077cc;
+}
+
+.how-it-works .card:hover h3,
+.how-it-works .card:hover p {
+    color: #ffffff;
+}
+
 
 /* ===================================== */
 /* IMPROVED FEATURES SECTION */
@@ -735,4 +759,31 @@ body:has(.doctor-login-wrapper) {
 
 .nav-link:hover::after {
     width: 100%;
+}
+/* ============================= */
+/* STEP 1 - GLASS NAVBAR */
+/* ============================= */
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(15px);
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+.reveal {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.8s ease;
+}
+
+.reveal.active {
+    opacity: 1;
+    transform: translateY(0);
 }

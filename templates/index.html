@@ -23,7 +23,7 @@
     </div>
 </section>
 
-<section class="how-it-works">
+<section class="how-it-works reveal">
     <h2>How It Works</h2>
     <div class="cards">
         <div class="card">
@@ -41,7 +41,7 @@
     </div>
 </section>
 
-<section class="features">
+<section class="features reveal">
     <h2>Features</h2>
     <ul>
         <li>✔ Real-time Delay Prediction</li>
@@ -55,6 +55,29 @@
 <footer>
     <p>© 2026 Smart AI Hospital Queue System</p>
 </footer>
+<script>
+window.addEventListener("scroll", function() {
+    const navbar = document.querySelector(".navbar");
+    navbar.classList.toggle("scrolled", window.scrollY > 50);
+});
+</script>
+<script>
+function revealOnScroll() {
+    const reveals = document.querySelectorAll(".reveal");
+
+    reveals.forEach(element => {
+        const windowHeight = window.innerHeight;
+        const elementTop = element.getBoundingClientRect().top;
+        const revealPoint = 100;
+
+        if (elementTop < windowHeight - revealPoint) {
+            element.classList.add("active");
+        }
+    });
+}
+
+window.addEventListener("scroll", revealOnScroll);
+</script>
 
 </body>
 </html>
