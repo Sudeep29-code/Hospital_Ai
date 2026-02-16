@@ -585,3 +585,154 @@ body:has(.doctor-login-wrapper) {
     font-size: 28px;
     font-weight: 600;
 }
+/* ===================================== */
+/* IMPROVED HOW IT WORKS SECTION */
+/* (ONLY INDEX PAGE – NO OTHER CHANGES) */
+/* ===================================== */
+
+.how-it-works {
+    background: #ffffff;
+    text-align: center;
+    padding: 90px 10%;
+}
+
+.how-it-works h2 {
+    font-size: 32px;
+    margin-bottom: 50px;
+    font-weight: 700;
+}
+
+/* Card Layout */
+.how-it-works .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+/* Individual Card */
+.how-it-works .card {
+    background: linear-gradient(145deg, #ffffff, #f0f7ff);
+    padding: 35px 25px;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 119, 204, 0.12);
+    transition: all 0.3s ease;
+}
+
+/* Hover Effect */
+.how-it-works .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 45px rgba(0, 119, 204, 0.25);
+}
+
+/* Card Titles */
+.how-it-works .card h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #0077cc;
+}
+
+/* Card Text */
+.how-it-works .card p {
+    font-size: 14px;
+    color: #555;
+}
+
+/* ===================================== */
+/* IMPROVED FEATURES SECTION */
+/* ===================================== */
+
+.features {
+    background: #f4f9ff;
+    text-align: center;
+    padding: 90px 10%;
+}
+
+.features h2 {
+    font-size: 32px;
+    margin-bottom: 40px;
+    font-weight: 700;
+}
+
+/* Make features grid */
+.features ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 0;
+}
+
+/* Feature cards */
+.features ul li {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 119, 204, 0.1);
+    font-weight: 500;
+    transition: 0.3s ease;
+}
+
+.features ul li:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 119, 204, 0.2);
+    color: #0077cc;
+}
+/* ===================================== */
+/* BLUE HOVER EFFECT - HOW IT WORKS */
+/* ===================================== */
+
+.how-it-works .card:hover {
+    background: #0077cc;
+    transform: translateY(-10px);
+    box-shadow: 0 20px 45px rgba(0, 119, 204, 0.4);
+}
+
+/* Change text color to white when hovering */
+.how-it-works .card:hover h3,
+.how-it-works .card:hover p {
+    color: #ffffff;
+}
+
+
+/* ===================================== */
+/* BLUE HOVER EFFECT - FEATURES */
+/* ===================================== */
+
+.features ul li:hover {
+    background: #0077cc;
+    color: #ffffff;
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 119, 204, 0.4);
+}
+/* ============================= */
+/* NAV LINK UNDERLINE ANIMATION */
+/* ============================= */
+
+.nav-link {
+    position: relative;
+    text-decoration: none;
+    color: #0077cc;
+    font-weight: 500;
+    padding-bottom: 5px;
+    transition: color 0.3s ease;
+}
+
+/* Create hidden line */
+.nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0%;
+    height: 3px;
+    background-color: #003366; /* Dark blue */
+    transition: width 0.3s ease;
+}
+
+/* Hover effect */
+.nav-link:hover {
+    color: #003366;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
