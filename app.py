@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, send_file, url_for
 import mysql.connector
 import os
+import random
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -28,6 +29,8 @@ model = joblib.load("duration_model.pkl")
 le_dept = joblib.load("dept_encoder.pkl")
 le_priority = joblib.load("priority_encoder.pkl")
 le_disease = joblib.load("disease_encoder.pkl")
+no_show_model = joblib.load("no_show_model.pkl")
+
 
 
 
@@ -122,6 +125,29 @@ def predict_duration(age, oxygen, bp, temperature, department, priority, disease
     return round(float(prediction), 2)
 
 
+
+def predict_no_show(age, priority, department):
+
+    # Encode priority
+    if priority in le_priority.classes_:
+        priority_encoded = le_priority.transform([priority])[0]
+    else:
+        priority_encoded = 0
+
+    # Encode department
+    if department in le_dept.classes_:
+        dept_encoded = le_dept.transform([department])[0]
+    else:
+        dept_encoded = 0
+
+    features = np.array([[age, priority_encoded, dept_encoded]])
+
+    probability = no_show_model.predict_proba(features)[0][1]
+
+    return round(float(probability), 2)
+
+
+
 # ========================
 # Home Page
 # ========================
@@ -198,27 +224,62 @@ def auto_reassign_patients(department):
     highest_doc = max(doctor_load, key=doctor_load.get)
     lowest_doc = min(doctor_load, key=doctor_load.get)
 
-    if doctor_load[highest_doc] - doctor_load[lowest_doc] >= 2:
+    current_score = calculate_department_score(department)
+
+    if doctor_load[highest_doc] - doctor_load[lowest_doc] >= 1:
+
+        # simulate shift
+        doctor_load[highest_doc] -= 1
+        doctor_load[lowest_doc] += 1
+
+        simulated_score = calculate_department_score(department)
+
+        # revert simulation
+        doctor_load[highest_doc] += 1
+        doctor_load[lowest_doc] -= 1
+
+        if simulated_score <= current_score:
+            return  # do NOT shift if it doesn't improve system
+
 
         cursor.execute("""
-            SELECT id, name
-            FROM patients
-            WHERE doctor_id=%s
-            AND priority='LOW'
-            AND status='waiting'
-            LIMIT 1
+        SELECT id, name, no_show_probability, last_reassigned_at
+        FROM patients
+        WHERE doctor_id=%s
+        AND priority='LOW'
+        AND status='waiting'
+        AND no_show_probability < 0.25
+        ORDER BY no_show_probability ASC
         """, (highest_doc,))
 
-        patient = cursor.fetchone()
+        patients = cursor.fetchall()
+
+        from datetime import datetime, timedelta
+        cooldown = timedelta(minutes=5)
+
+        patient = None
+
+        for p in patients:
+            last_time = p["last_reassigned_at"]
+
+            if last_time:
+                if datetime.now() - last_time < cooldown:
+                    continue  # Skip recently shifted patient
+
+            patient = p
+            break
+
 
         if patient:
 
             # 🔥 Shift patient
             cursor.execute("""
-                UPDATE patients
-                SET doctor_id=%s
-                WHERE id=%s
-            """, (lowest_doc, patient["id"]))
+            UPDATE patients
+            SET doctor_id=%s,
+                last_reassigned_at=%s
+            WHERE id=%s
+            """, (lowest_doc, datetime.now(), patient["id"]))
+
 
             # 🔥 Store explanation log
             reason = (
@@ -281,10 +342,54 @@ def calculate_fairness(department):
     return max(loads) - min(loads)
 
 
+
+# =========================
+# Multi-Objective Score
+# =========================
+def calculate_department_score(department):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT doctor_id, COUNT(*) AS total
+        FROM patients
+        WHERE status IN ('waiting','emergency')
+        AND department=%s
+        GROUP BY doctor_id
+    """, (department,))
+
+    data = cursor.fetchall()
+
+    if not data:
+        return 100
+
+    loads = [d["total"] for d in data]
+
+    max_load = max(loads)
+    min_load = min(loads)
+
+    imbalance = max_load - min_load
+
+    avg_load = sum(loads) / len(loads)
+
+    # Score components
+    fairness_component = max(0, 100 - (imbalance * 10))
+    utilization_component = max(0, 100 - abs(avg_load - 5) * 10)
+
+    final_score = (0.6 * fairness_component) + (0.4 * utilization_component)
+
+    cursor.close()
+    conn.close()
+
+    return round(final_score, 2)
+
 # ========================
 # AI Optimization Score
 # ========================
 def calculate_optimization_score(department):
+
+    fairness = calculate_fairness(department)
 
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -319,13 +424,16 @@ def calculate_optimization_score(department):
 
     avg_wait = total_wait / len(patients)
 
-    # Convert wait to optimization score (lower wait = better score)
-    score = max(0, 100 - avg_wait)
+    # Normalize fairness (0–10 scale)
+    fairness_score = max(0, 100 - fairness * 15)
 
-    return round(score, 2)
+    # Normalize wait (assuming 0–60 mins)
+    wait_score = max(0, 100 - avg_wait)
 
+    # 🔥 Multi-objective weighted optimization
+    final_score = 0.6 * fairness_score + 0.4 * wait_score
 
-
+    return round(final_score, 2)
 
 # ==============================
 # TRUE CONTINUOUS OPTIMIZER
@@ -359,7 +467,6 @@ if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     scheduler.start()
 
 
-# DOCTOR DASHBOARD
 # DOCTOR DASHBOARD
 @app.route("/doctor_dashboard")
 def doctor_dashboard():
@@ -555,6 +662,8 @@ def register():
 
         priority = calculate_priority(age, oxygen, temperature, bp, disease)
         status = "emergency" if priority == "HIGH" else "waiting"
+        no_show_prob = predict_no_show(age, priority, department)
+
 
         conn = get_db()
         cursor = conn.cursor()
@@ -599,16 +708,19 @@ def register():
         # INSERT PATIENT (NOW CORRECT)
         # ------------------------------
         cursor.execute("""
-            INSERT INTO patients
-            (name, age, aadhaar, gender, dob, phone, whatsapp,
-             blood_group, address, department,
-             disease, priority, status, oxygen, bp, temperature, doctor_id)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO patients
+        (name, age, aadhaar, gender, dob, phone, whatsapp,
+        blood_group, address, department,
+        disease, priority, status, oxygen, bp, temperature,
+        doctor_id, no_show_probability)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            name, age, aadhaar, gender, dob, phone, whatsapp,
-            blood_group, address, department,
-            disease, priority, status, oxygen, bp, temperature, doctor_id
+        name, age, aadhaar, gender, dob, phone, whatsapp,
+        blood_group, address, department,
+        disease, priority, status, oxygen, bp, temperature,
+        doctor_id, no_show_prob
         ))
+
 
         conn.commit()
         patient_id = cursor.lastrowid
