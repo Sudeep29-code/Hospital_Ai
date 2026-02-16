@@ -2,70 +2,103 @@
 <html>
 <head>
     <title>Patient Registration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
 </head>
 <body>
 
-<h2>Patient Registration Form</h2>
-<hr>
+<div class="form-container">
+    <h1>Patient Registration Form</h1>
 
-<form method="POST" action="/register">
+    <form method="POST" action="/register">
 
-    Name:<br>
-    <input type="text" name="name" required><br><br>
+        <!-- Basic Details -->
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" required>
+        </div>
 
-    Aadhaar Number (Unique ID):<br>
-    <input type="text" name="aadhaar" required><br><br>
+        <div class="form-group">
+            <label>Aadhaar Number (Unique ID)</label>
+            <input type="text" name="aadhaar" required>
+        </div>
 
-    Gender:<br>
-    <select name="gender" required>
-        <option value="">Select</option>
-        <option>Male</option>
-        <option>Female</option>
-        <option>Other</option>
-    </select><br><br>
+        <div class="form-group">
+            <label>Gender</label>
+            <select name="gender" required>
+                <option value="">Select</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+            </select>
+        </div>
 
-    DOB:<br>
-    <input type="date" name="dob" required><br><br>
+        <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" name="dob" required>
+        </div>
 
-    Phone Number:<br>
-    <input type="text" name="phone" required><br><br>
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" name="phone" required>
+        </div>
 
-    WhatsApp Number:<br>
-    <input type="text" name="whatsapp"><br><br>
+        <div class="form-group">
+            <label>WhatsApp Number</label>
+            <input type="text" name="whatsapp">
+        </div>
 
-    Blood Group:<br>
-    <input type="text" name="blood_group"><br><br>
+        <div class="form-group">
+            <label>Blood Group</label>
+            <input type="text" name="blood_group">
+        </div>
 
-    Address:<br>
-    <textarea name="address"></textarea><br><br>
+        <div class="form-group">
+            <label>Address</label>
+            <textarea name="address" rows="3"></textarea>
+        </div>
 
-    Select Department:<br>
-    <select name="department" required>
-        <option value="">Select</option>
-        <option>Cardiology</option>
-        <option>Orthopedics</option>
-        <option>Pediatrics</option>
-        <option>General Medicine</option>
-    </select><br><br>
+        <div class="form-group">
+            <label>Select Department</label>
+            <select name="department" required>
+                <option value="">Select</option>
+                <option>Cardiology</option>
+                <option>Orthopedics</option>
+                <option>Pediatrics</option>
+                <option>General Medicine</option>
+            </select>
+        </div>
 
-    <hr>
-    <h3>Vital Signs (For Priority Detection)</h3>
+        <!-- Vital Signs Section -->
+        <div class="section-title">
+            Vital Signs (For Priority Detection)
+        </div>
 
-    Oxygen Level (SpO2 %):<br>
-    <input type="number" name="oxygen" min="50" max="100" required><br><br>
+        <div class="form-group">
+            <label>Oxygen Level (SpO2 %)</label>
+            <input type="number" name="oxygen" min="50" max="100" required>
+        </div>
 
-    Blood Pressure (Systolic):<br>
-    <input type="number" name="bp" min="50" max="200" required><br><br>
+        <div class="form-group">
+            <label>Blood Pressure (Systolic)</label>
+            <input type="number" name="bp" min="50" max="200" required>
+        </div>
 
-    Temperature (°C):<br>
-    <input type="number" name="temperature" step="0.1" min="30" max="45" required><br><br>
-    <label>Disease / Symptoms</label>
-    <input type="text" name="disease" required><br><br>
+        <div class="form-group">
+            <label>Temperature (°C)</label>
+            <input type="number" name="temperature" step="0.1" min="30" max="45" required>
+        </div>
 
+        <div class="form-group">
+            <label>Disease / Symptoms</label>
+            <input type="text" name="disease" required>
+        </div>
 
-    <button type="submit">Register & Get Token</button>
+        <button type="submit">Register & Get Token</button>
 
-</form>
+    </form>
+</div>
 
 </body>
 </html>
