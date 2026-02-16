@@ -77,4 +77,4 @@ joblib.dump(le_dept, "dept_encoder.pkl")
 joblib.dump(le_priority, "priority_encoder.pkl")
 joblib.dump(le_disease, "disease_encoder.pkl")
 
-print("✅ AI Model trained successfully on real hospital data!")
+print("✅ Duration AI Model trained successfully on real hospital data!")

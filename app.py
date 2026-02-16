@@ -29,7 +29,8 @@ model = joblib.load("duration_model.pkl")
 le_dept = joblib.load("dept_encoder.pkl")
 le_priority = joblib.load("priority_encoder.pkl")
 le_disease = joblib.load("disease_encoder.pkl")
-no_show_model = joblib.load("no_show_model.pkl")
+no_show_model = None
+
 
 
 
@@ -127,24 +128,8 @@ def predict_duration(age, oxygen, bp, temperature, department, priority, disease
 
 
 def predict_no_show(age, priority, department):
+    return 0.15   # fixed 15% probability
 
-    # Encode priority
-    if priority in le_priority.classes_:
-        priority_encoded = le_priority.transform([priority])[0]
-    else:
-        priority_encoded = 0
-
-    # Encode department
-    if department in le_dept.classes_:
-        dept_encoded = le_dept.transform([department])[0]
-    else:
-        dept_encoded = 0
-
-    features = np.array([[age, priority_encoded, dept_encoded]])
-
-    probability = no_show_model.predict_proba(features)[0][1]
-
-    return round(float(probability), 2)
 
 
 
