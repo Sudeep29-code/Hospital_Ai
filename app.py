@@ -29,7 +29,12 @@ model = joblib.load("duration_model.pkl")
 le_dept = joblib.load("dept_encoder.pkl")
 le_priority = joblib.load("priority_encoder.pkl")
 le_disease = joblib.load("disease_encoder.pkl")
-no_show_model = None
+
+# 🔥 Load No-Show Model
+no_show_model = joblib.load("no_show_model.pkl")
+no_show_le_dept = joblib.load("no_show_dept_encoder.pkl")
+no_show_le_priority = joblib.load("no_show_priority_encoder.pkl")
+
 
 
 
@@ -98,23 +103,59 @@ def get_db():
 # AI Duration Prediction
 # ========================
 def predict_duration(age, oxygen, bp, temperature, department, priority, disease):
+    try:
+        department = department.strip()
+        priority = priority.strip()
+        disease = disease.strip().lower()
 
-    dept_encoded = le_dept.transform([department])[0] if department in le_dept.classes_ else 0
-    priority_encoded = le_priority.transform([priority])[0] if priority in le_priority.classes_ else 0
-    disease = disease.lower()
-    disease_encoded = le_disease.transform([disease])[0] if disease in le_disease.classes_ else 0
+        dept_encoded = le_dept.transform([department])[0] if department in le_dept.classes_ else 0
+        priority_encoded = le_priority.transform([priority])[0] if priority in le_priority.classes_ else 0
+        disease_encoded = le_disease.transform([disease])[0] if disease in le_disease.classes_ else 0
 
-    features = np.array([[age, oxygen, bp, temperature,
-                          dept_encoded, priority_encoded, disease_encoded]])
+        features = np.array([[age, oxygen, bp, temperature,
+                              dept_encoded, priority_encoded, disease_encoded]])
 
-    prediction = model.predict(features)[0]
-    return round(float(prediction), 2)
+        prediction = model.predict(features)[0]
+
+        return round(float(prediction), 2)
+
+    except Exception as e:
+        print("Duration Prediction Error:", e)
+        return 10   # safe fallback value
 
 
 
-def predict_no_show(age, priority, department):
-    return 0.15   # fixed 15% probability
+# ========================
+# AI No-Show Prediction
+# ========================
+def predict_no_show(age, priority, department, predicted_duration):
+    try:
+        department = department.strip()
+        priority = priority.strip()
 
+        # Encode department
+        dept_encoded = (
+            no_show_le_dept.transform([department])[0]
+            if department in no_show_le_dept.classes_
+            else 0
+        )
+
+        # Encode priority
+        priority_encoded = (
+            no_show_le_priority.transform([priority])[0]
+            if priority in no_show_le_priority.classes_
+            else 0
+        )
+
+        features = np.array([[age, dept_encoded, priority_encoded, predicted_duration]])
+
+        probability = no_show_model.predict_proba(features)[0][1]
+
+        return round(float(probability), 2)
+
+    except Exception as e:
+        print("No-Show Prediction Error:", e)
+        return 0.10  # safe fallback
 
 
 
@@ -632,12 +673,20 @@ def register():
 
         priority = calculate_priority(age, oxygen, temperature, bp, disease)
         status = "emergency" if priority == "HIGH" else "waiting"
-        no_show_prob = predict_no_show(age, priority, department)
 
         # 🔥 ML prediction BEFORE insert
         predicted_time = predict_duration(
-            age, oxygen, bp, temperature,
-            department, priority, disease
+        age, oxygen, bp, temperature,
+        department, priority, disease
+        )
+
+
+
+        no_show_prob = predict_no_show(
+            age,
+            priority,
+            department,
+            predicted_time
         )
 
         conn = get_db()
