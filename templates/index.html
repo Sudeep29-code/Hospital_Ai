@@ -22,6 +22,33 @@
         <a href="/login" class="btn-outline">Check Queue Status</a>
     </div>
 </section>
+<section class="stats">
+
+    <div class="stat">
+        <div class="circle" data-target="10000" data-suffix="+" style="--percentage: 100;">
+            <span class="counter">0</span>
+        </div>
+        <p>Patients Managed</p>
+    </div>
+
+    <div class="stat">
+        <div class="circle" data-target="50" data-suffix="+" style="--percentage: 50;">
+            <span class="counter">0</span>
+        </div>
+        <p>Doctors Connected</p>
+    </div>
+
+    <div class="stat">
+        <div class="circle" data-target="95" data-suffix="%" style="--percentage: 95;">
+            <span class="counter">0</span>
+        </div>
+        <p>Reduced Waiting Time</p>
+    </div>
+
+</section>
+
+
+
 
 <section class="how-it-works reveal">
     <h2>How It Works</h2>
@@ -40,6 +67,55 @@
         </div>
     </div>
 </section>
+<section class="testimonials">
+    <h2>What Doctors Say</h2>
+
+    <div class="testimonial-container">
+        <div class="testimonial-track">
+
+            <div class="testimonial-card">
+                <p>"Reduced patient chaos by 40% in our OPD."</p>
+                <h4>- Dr. Sharma</h4>
+            </div>
+
+            <div class="testimonial-card">
+                <p>"Queue time dropped significantly after AI optimization."</p>
+                <h4>- Dr. Mehta</h4>
+            </div>
+
+            <div class="testimonial-card">
+                <p>"Improved patient satisfaction instantly."</p>
+                <h4>- Dr. Verma</h4>
+            </div>
+
+            <div class="testimonial-card">
+                <p>"Best digital transformation we implemented."</p>
+                <h4>- Dr. Kapoor</h4>
+            </div>
+            <div class="testimonial-card">
+                <p>"Reduced patient chaos by 40% in our OPD."</p>
+                <h4>- Dr. Sharma</h4>
+            </div>
+
+            <div class="testimonial-card">
+                <p>"Queue time dropped significantly after AI optimization."</p>
+                <h4>- Dr. Mehta</h4>
+            </div>
+
+            <div class="testimonial-card">
+                <p>"Improved patient satisfaction instantly."</p>
+                <h4>- Dr. Verma</h4>
+            </div>
+
+            <div class="testimonial-card">
+                <p>"Best digital transformation we implemented."</p>
+                <h4>- Dr. Kapoor</h4>
+            </div>
+
+        </div>
+    </div>
+</section>
+
 
 <section class="features reveal">
     <h2>Features</h2>
@@ -77,6 +153,91 @@ function revealOnScroll() {
 }
 
 window.addEventListener("scroll", revealOnScroll);
+</script>
+<script>
+const counters = document.querySelectorAll('.counter');
+
+counters.forEach(counter => {
+    counter.innerText = '0';
+
+    const updateCounter = () => {
+        const target = +counter.getAttribute('data-target');
+        const count = +counter.innerText;
+
+        const increment = target / 100;
+
+        if (count < target) {
+            counter.innerText = Math.ceil(count + increment);
+            setTimeout(updateCounter, 20);
+        } else {
+            counter.innerText = target;
+        }
+    };
+
+    updateCounter();
+});
+</script>
+<script>
+const counters = document.querySelectorAll('.counter');
+
+counters.forEach(counter => {
+    counter.innerText = '0';
+
+    const updateCounter = () => {
+        const target = +counter.getAttribute('data-target');
+        const count = +counter.innerText;
+
+        const increment = target / 100;
+
+        if (count < target) {
+            counter.innerText = Math.ceil(count + increment);
+            setTimeout(updateCounter, 20);
+        } else {
+            counter.innerText = target;
+        }
+    };
+
+    updateCounter();
+});
+</script>
+<script>
+const circles = document.querySelectorAll(".circle");
+
+circles.forEach(circle => {
+    const counter = circle.querySelector(".counter");
+    const target = +circle.getAttribute("data-target");
+    const suffix = circle.getAttribute("data-suffix");
+    const finalPercent = +circle.getAttribute("style")
+        .match(/--percentage:\s*(\d+)/)[1];
+
+    let count = 0;
+    const duration = 2000;
+    const increment = target / (duration / 16);
+
+    function updateCounter() {
+        count += increment;
+
+        if (count >= target) {
+            count = target;
+        }
+
+        counter.innerText = Math.floor(count) + suffix;
+
+        // Fill based on percentage, not target
+        const progress = (count / target) * finalPercent;
+
+        circle.style.background = `conic-gradient(
+            #0077cc ${progress}%,
+            #e6f2ff ${progress}%
+        )`;
+
+        if (count < target) {
+            requestAnimationFrame(updateCounter);
+        }
+    }
+
+    updateCounter();
+});
 </script>
 
 </body>

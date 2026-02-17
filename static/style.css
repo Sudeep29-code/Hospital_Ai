@@ -15,6 +15,10 @@ body {
     color: #333;
     animation: fadeInBody 1s ease-in-out;
 }
+body {
+    background: linear-gradient(to bottom, #f9fbff, #ffffff);
+}
+
 
 @keyframes fadeInBody {
     from { opacity: 0; }
@@ -787,3 +791,186 @@ body:has(.doctor-login-wrapper) {
     opacity: 1;
     transform: translateY(0);
 }
+/* ============================= */
+/* STEP 5 - BUTTON SHINE EFFECT */
+/* ============================= */
+
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255,255,255,0.4),
+        transparent
+    );
+    transition: 0.6s;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+/* ========================= */
+/* STATS SECTION */
+/* ========================= */
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    padding: 70px 10%;
+    background: #f8fbff;
+    text-align: center;
+}
+
+.stat h3 {
+    font-size: 32px;
+    color: #0077cc;
+}
+
+.stat p {
+    color: #666;
+}
+/* ========================= */
+/* TESTIMONIALS */
+/* ========================= */
+
+.testimonials {
+    padding: 80px 10%;
+    text-align: center;
+}
+
+.testimonial-card {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+}
+/* ========================= */
+/* STATS CIRCLE DESIGN */
+/* ========================= */
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 80px;
+    padding: 80px 10%;
+    text-align: center;
+    background: #f7f9fc;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+/* ========================= */
+/* CIRCULAR LOADING STATS */
+/* ========================= */
+
+.circle {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-weight: bold;
+    font-size: 22px;
+    color: #0077cc;
+
+    background: conic-gradient(
+        #0077cc calc(var(--percentage) * 1%),
+        #e6f0fa 0%
+    );
+
+    animation: load 1.5s ease forwards;
+}
+
+/* White center */
+.circle::before {
+    content: "";
+    position: absolute;
+    width: 95px;
+    height: 95px;
+    background: white;
+    border-radius: 50%;
+}
+
+/* Keep text above white circle */
+.circle span {
+    position: relative;
+    z-index: 2;
+}
+
+/* Animation */
+@keyframes load {
+    from {
+        background: conic-gradient(#0077cc 0%, #e6f0fa 0%);
+    }
+}
+/* Start circle from top (12 o'clock) */
+.circle {
+    transform: rotate(-90deg);
+}
+
+.circle span {
+    transform: rotate(90deg);
+}
+/* ========================= */
+/* TESTIMONIAL CAROUSEL */
+/* ========================= */
+
+.testimonials {
+    padding: 80px 10%;
+    text-align: center;
+    overflow: hidden;
+}
+
+.testimonial-container {
+    overflow: hidden;
+    position: relative;
+    margin-top: 40px;
+}
+
+.testimonial-track {
+    display: flex;
+    gap: 30px;
+    animation: scrollX 25s ease-in-out infinite;
+}
+
+.testimonial-card {
+    min-width: 300px;
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+}
+
+/* Auto Scroll Animation */
+@keyframes scrollX {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+/* Pause carousel when mouse hovers */
+.testimonial-track:hover {
+    animation-play-state: paused;
+}
+
+
