@@ -94,7 +94,7 @@ def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="kaibalya123",
+        password="sudeep@29",
         database="hospital_db"
     )
 
@@ -769,8 +769,8 @@ def register():
             department=department,
             queue_number=queue_number,
             estimated_wait=round(estimated_wait, 2),
-            priority=priority,
-            explanation=explanation
+            explanation=explanation,
+            priority=priority 
         )
 
     return render_template("register.html")
