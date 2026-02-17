@@ -29,7 +29,12 @@ model = joblib.load("duration_model.pkl")
 le_dept = joblib.load("dept_encoder.pkl")
 le_priority = joblib.load("priority_encoder.pkl")
 le_disease = joblib.load("disease_encoder.pkl")
-no_show_model = None
+
+# 🔥 Load No-Show Model
+no_show_model = joblib.load("no_show_model.pkl")
+no_show_le_dept = joblib.load("no_show_dept_encoder.pkl")
+no_show_le_priority = joblib.load("no_show_priority_encoder.pkl")
+
 
 
 
@@ -89,7 +94,7 @@ def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="kaibalya123",
+        password="sudeep@29",
         database="hospital_db"
     )
 
@@ -98,38 +103,59 @@ def get_db():
 # AI Duration Prediction
 # ========================
 def predict_duration(age, oxygen, bp, temperature, department, priority, disease):
+    try:
+        department = department.strip()
+        priority = priority.strip()
+        disease = disease.strip().lower()
 
-    # Safe encoding for department
-    if department in le_dept.classes_:
-        dept_encoded = le_dept.transform([department])[0]
-    else:
-        dept_encoded = 0
+        dept_encoded = le_dept.transform([department])[0] if department in le_dept.classes_ else 0
+        priority_encoded = le_priority.transform([priority])[0] if priority in le_priority.classes_ else 0
+        disease_encoded = le_disease.transform([disease])[0] if disease in le_disease.classes_ else 0
 
-    # Safe encoding for priority
-    if priority in le_priority.classes_:
-        priority_encoded = le_priority.transform([priority])[0]
-    else:
-        priority_encoded = 0
+        features = np.array([[age, oxygen, bp, temperature,
+                              dept_encoded, priority_encoded, disease_encoded]])
 
-    # Safe encoding for disease
-    disease = disease.lower()
-    if disease in le_disease.classes_:
-        disease_encoded = le_disease.transform([disease])[0]
-    else:
-        disease_encoded = 0
+        prediction = model.predict(features)[0]
 
-    features = np.array([[age, oxygen, bp, temperature,
-                          dept_encoded, priority_encoded, disease_encoded]])
+        return round(float(prediction), 2)
 
-    prediction = model.predict(features)[0]
-
-    return round(float(prediction), 2)
+    except Exception as e:
+        print("Duration Prediction Error:", e)
+        return 10   # safe fallback value
 
 
 
-def predict_no_show(age, priority, department):
-    return 0.15   # fixed 15% probability
+# ========================
+# AI No-Show Prediction
+# ========================
+def predict_no_show(age, priority, department, predicted_duration):
+    try:
+        department = department.strip()
+        priority = priority.strip()
 
+        # Encode department
+        dept_encoded = (
+            no_show_le_dept.transform([department])[0]
+            if department in no_show_le_dept.classes_
+            else 0
+        )
+
+        # Encode priority
+        priority_encoded = (
+            no_show_le_priority.transform([priority])[0]
+            if priority in no_show_le_priority.classes_
+            else 0
+        )
+
+        features = np.array([[age, dept_encoded, priority_encoded, predicted_duration]])
+
+        probability = no_show_model.predict_proba(features)[0][1]
+
+        return round(float(probability), 2)
+
+    except Exception as e:
+        print("No-Show Prediction Error:", e)
+        return 0.10  # safe fallback
 
 
 
@@ -647,19 +673,37 @@ def register():
 
         priority = calculate_priority(age, oxygen, temperature, bp, disease)
         status = "emergency" if priority == "HIGH" else "waiting"
-        no_show_prob = predict_no_show(age, priority, department)
 
+        # 🔥 ML prediction BEFORE insert
+        predicted_time = predict_duration(
+        age, oxygen, bp, temperature,
+        department, priority, disease
+        )
+
+
+
+        no_show_prob = predict_no_show(
+            age,
+            priority,
+            department,
+            predicted_time
+        )
 
         conn = get_db()
         cursor = conn.cursor()
 
-        # ------------------------------
-        # 🔥 DOCTOR LOAD BALANCING
-        # ------------------------------
+        # ========================
+        # REAL-TIME LOAD BALANCING
+        # ========================
         cursor.execute("""
-            SELECT id, name, total_consultation_time, patients_completed
-            FROM doctors
-            WHERE department=%s
+            SELECT d.id, d.name,
+                   COUNT(p.id) AS active_count
+            FROM doctors d
+            LEFT JOIN patients p
+                ON d.id = p.doctor_id
+                AND p.status IN ('waiting','emergency')
+            WHERE d.department=%s
+            GROUP BY d.id
         """, (department,))
 
         doctors = cursor.fetchall()
@@ -668,54 +712,43 @@ def register():
         lowest_load = float('inf')
 
         for doc in doctors:
-            completed = doc[3] or 0
-            total_time = doc[2] or 0
-
-            avg = total_time / completed if completed > 0 else 0
-
-            if avg < lowest_load:
-                lowest_load = avg
+            active = doc[2] or 0
+            if active < lowest_load:
+                lowest_load = active
                 selected_doctor = doc
 
         if selected_doctor:
             doctor_id = selected_doctor[0]
             doctor_name = selected_doctor[1]
+            explanation = f"Assigned to Dr. {doctor_name} due to lowest active load ({lowest_load} patients)."
         else:
             doctor_id = None
             doctor_name = "Not Assigned"
-        # 🔥 Explainable AI Decision
-        if selected_doctor:
-            explanation = f"Assigned to Dr. {doctor_name} due to lowest workload (avg {round(lowest_load,2)} mins per patient)."
-        else:
-            explanation = "No doctor available in this department."
+            explanation = "No doctor available."
 
-        # ------------------------------
-        # INSERT PATIENT (NOW CORRECT)
-        # ------------------------------
+        # ========================
+        # INSERT PATIENT
+        # ========================
         cursor.execute("""
         INSERT INTO patients
         (name, age, aadhaar, gender, dob, phone, whatsapp,
         blood_group, address, department,
         disease, priority, status, oxygen, bp, temperature,
-        doctor_id, no_show_probability)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        doctor_id, consultation_duration, no_show_probability)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-        name, age, aadhaar, gender, dob, phone, whatsapp,
-        blood_group, address, department,
-        disease, priority, status, oxygen, bp, temperature,
-        doctor_id, no_show_prob
+            name, age, aadhaar, gender, dob, phone, whatsapp,
+            blood_group, address, department,
+            disease, priority, status, oxygen, bp, temperature,
+            doctor_id, predicted_time, no_show_prob
         ))
-
 
         conn.commit()
         patient_id = cursor.lastrowid
-        # 🔥 Trigger dynamic re-optimization
-        auto_reassign_patients(department)
 
-
-        # ------------------------------
-        # Queue Position
-        # ------------------------------
+        # ========================
+        # QUEUE POSITION
+        # ========================
         cursor.execute("""
             SELECT COUNT(*) FROM patients
             WHERE department=%s
@@ -724,15 +757,6 @@ def register():
         """, (department, patient_id))
 
         queue_number = cursor.fetchone()[0]
-
-        # ------------------------------
-        # AI Prediction
-        # ------------------------------
-        predicted_time = predict_duration(
-            age, oxygen, bp, temperature,
-            department, priority, disease
-        )
-
         estimated_wait = queue_number * predicted_time
 
         cursor.close()
@@ -746,9 +770,8 @@ def register():
             queue_number=queue_number,
             estimated_wait=round(estimated_wait, 2),
             priority=priority,
-            explanation=explanation  
+            explanation=explanation
         )
-
 
     return render_template("register.html")
 
