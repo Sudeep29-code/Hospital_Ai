@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, send_file, url_for
+from scipy.optimize import linear_sum_assignment
 from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 import os
@@ -8,6 +9,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import joblib
 import numpy as np
+import shap
+
 
 
 # ReportLab Imports
@@ -122,6 +125,7 @@ def admin_dashboard():
         FROM doctors d
         LEFT JOIN patients p 
             ON p.doctor_id = d.id
+            AND p.status IN ('waiting','emergency')
         GROUP BY d.id
     """)
     
@@ -379,6 +383,16 @@ no_show_model = joblib.load("no_show_model.pkl")
 no_show_le_dept = joblib.load("no_show_dept_encoder.pkl")
 no_show_le_priority = joblib.load("no_show_priority_encoder.pkl")
 
+# ========================
+# SHAP Explainers (Correct Type)
+# ========================
+
+# Duration model (if RandomForest or similar)
+duration_explainer = shap.TreeExplainer(model)
+
+# No-show model (Logistic Regression)
+no_show_explainer = shap.LinearExplainer(no_show_model, np.zeros((1,4)))
+
 
 
 
@@ -487,11 +501,33 @@ def predict_duration(age, oxygen, bp, temperature, department, priority, disease
 
         prediction = model.predict(features)[0]
 
-        return round(float(prediction), 2)
+        # ========================
+        # 🔥 SHAP Explanation
+        # ========================
+        shap_values = duration_explainer(features)
+
+        feature_names = [
+            "Age",
+            "Oxygen Level",
+            "Blood Pressure",
+            "Temperature",
+            "Department",
+            "Priority",
+            "Disease"
+        ]
+
+        explanation = []
+
+        for name, value in zip(feature_names, shap_values.values[0]):
+            if abs(value) > 1:
+                explanation.append(f"{name} contributed {round(value,2)} minutes")
+
+        return round(float(prediction), 2), explanation
 
     except Exception as e:
         print("Duration Prediction Error:", e)
-        return 10   # safe fallback value
+        return 10, ["Fallback prediction used"]
+
 
 
 
@@ -503,14 +539,12 @@ def predict_no_show(age, priority, department, predicted_duration):
         department = department.strip()
         priority = priority.strip()
 
-        # Encode department
         dept_encoded = (
             no_show_le_dept.transform([department])[0]
             if department in no_show_le_dept.classes_
             else 0
         )
 
-        # Encode priority
         priority_encoded = (
             no_show_le_priority.transform([priority])[0]
             if priority in no_show_le_priority.classes_
@@ -521,11 +555,33 @@ def predict_no_show(age, priority, department, predicted_duration):
 
         probability = no_show_model.predict_proba(features)[0][1]
 
-        return round(float(probability), 2)
+        # ========================
+        # 🔥 SHAP Explanation
+        # ========================
+        shap_values = no_show_explainer(features)
+
+        feature_names = [
+            "Age",
+            "Department",
+            "Priority",
+            "Predicted Duration"
+        ]
+
+        explanation = []
+
+        for name, value in zip(feature_names, shap_values.values[0]):
+            if abs(value) > 0.02:
+                direction = "increased" if value > 0 else "reduced"
+                explanation.append(
+                    f"{name} {direction} no-show risk by {round(abs(value)*100,2)}%"
+                )
+
+        return round(float(probability), 2), explanation
 
     except Exception as e:
         print("No-Show Prediction Error:", e)
-        return 0.10  # safe fallback
+        return 0.10, ["Fallback probability used"]
+
 
 
 
@@ -814,7 +870,7 @@ def calculate_optimization_score(department):
     total_wait = 0
 
     for p in patients:
-        predicted = predict_duration(
+        predicted,_= predict_duration(
             p["age"],
             p["oxygen"],
             p["bp"],
@@ -852,6 +908,90 @@ def calculate_optimization_score(department):
 
     return round(final_score, 2)
 
+# ========================
+# GRAPH-BASED OPTIMIZER
+# ========================
+def optimize_assignments_graph(department):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    # Get waiting + emergency patients
+    cursor.execute("""
+        SELECT * FROM patients
+        WHERE department=%s
+        AND status IN ('waiting','emergency')
+    """, (department,))
+    patients = cursor.fetchall()
+
+    # Get active doctors
+    cursor.execute("""
+        SELECT * FROM doctors
+        WHERE department=%s
+        AND is_active=1
+    """, (department,))
+    doctors = cursor.fetchall()
+
+    if not patients or not doctors:
+        cursor.close()
+        conn.close()
+        return
+
+    import numpy as np
+
+    cost_matrix = np.zeros((len(patients), len(doctors)))
+
+    for i, p in enumerate(patients):
+        for j, d in enumerate(doctors):
+
+            # 🔥 Predicted Duration
+            predicted, _ = predict_duration(
+                p["age"],
+                p["oxygen"],
+                p["bp"],
+                p["temperature"],
+                p["department"],
+                p["priority"],
+                p["disease"]
+            )
+
+            # 🔥 No-show probability
+            no_show = p.get("no_show_probability", 0.1)
+            expected_time = predicted * (1 - no_show)
+
+            # 🔥 Doctor current load
+            cursor.execute("""
+                SELECT COUNT(*) AS doctor_load
+                FROM patients
+                WHERE doctor_id=%s
+                AND status IN ('waiting','emergency')
+            """, (d["id"],))
+            load = cursor.fetchone()["doctor_load"]
+
+            # 🔥 Emergency bonus
+            priority_bonus = -10 if p["priority"] == "HIGH" else 0
+
+            cost = expected_time + (load * 5) + priority_bonus
+
+            cost_matrix[i][j] = cost
+
+    # 🔥 Hungarian Algorithm
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+
+    # Apply assignments
+    for r, c in zip(row_ind, col_ind):
+        patient_id = patients[r]["id"]
+        doctor_id = doctors[c]["id"]
+
+        cursor.execute("""
+            UPDATE patients
+            SET doctor_id=%s
+            WHERE id=%s
+        """, (doctor_id, patient_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 
 # ========================
@@ -872,7 +1012,7 @@ def run_global_optimization():
         department = dept[0]
 
         # 1️⃣ Run reassignment logic
-        auto_reassign_patients(department)
+        optimize_assignments_graph(department)
 
         # 2️⃣ Recalculate optimization score (for monitoring)
         score = calculate_optimization_score(department)
@@ -896,7 +1036,8 @@ def continuous_optimizer():
     departments = cursor.fetchall()
 
     for dept in departments:
-        auto_reassign_patients(dept[0])
+        optimize_assignments_graph(dept[0])
+
 
     cursor.close()
     conn.close()
@@ -1145,19 +1286,21 @@ def register():
         status = "emergency" if priority == "HIGH" else "waiting"
 
         # ========================
-        # ML Prediction
+        # ML Prediction + Explainability
         # ========================
-        predicted_time = predict_duration(
-            age, oxygen, bp, temperature,
-            department, priority, disease
+
+        predicted_time, duration_explanation = predict_duration(
+        age, oxygen, bp, temperature,
+        department, priority, disease
         )
 
-        no_show_prob = predict_no_show(
-            age,
-            priority,
-            department,
-            predicted_time
+        no_show_prob, no_show_explanation = predict_no_show(
+        age,
+        priority,
+        department,
+        predicted_time
         )
+
 
         conn = get_db()
         cursor = conn.cursor()
@@ -1213,14 +1356,18 @@ def register():
         (name, age, aadhaar, gender, dob, phone, whatsapp,
         blood_group, address, department,
         disease, priority, status, oxygen, bp, temperature,
-        doctor_id, consultation_duration, no_show_probability)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        doctor_id, consultation_duration, no_show_probability,
+        duration_explanation, no_show_explanation)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             name, age, aadhaar, gender, dob, phone, whatsapp,
             blood_group, address, department,
             disease, priority, status, oxygen, bp, temperature,
-            doctor_id, predicted_time, no_show_prob
+            doctor_id, predicted_time, no_show_prob,
+            str(duration_explanation),
+            str(no_show_explanation)
         ))
+
 
         conn.commit()
         patient_id = cursor.lastrowid
@@ -1236,7 +1383,8 @@ def register():
         """, (department, patient_id))
 
         queue_number = cursor.fetchone()[0]
-        estimated_wait = queue_number * predicted_time
+        estimated_wait = (queue_number - 1) * predicted_time
+
 
         cursor.close()
         conn.close()
@@ -1249,7 +1397,9 @@ def register():
             queue_number=queue_number,
             estimated_wait=round(estimated_wait, 2),
             explanation=explanation,
-            priority=priority 
+            priority=priority,
+            duration_explanation=duration_explanation,
+            no_show_explanation=no_show_explanation
         )
 
     return render_template("register.html")
@@ -1312,7 +1462,7 @@ def live_status(patient_id):
     cursor.close()
     conn.close()
 
-    predicted_time = predict_duration(
+    predicted_time,_ = predict_duration(
     patient["age"],
     patient["oxygen"],
     patient["bp"],
