@@ -115,22 +115,147 @@
         </div>
     </div>
 </section>
-
-
 <section class="features reveal">
     <h2>Features</h2>
-    <ul>
-        <li>✔ Real-time Delay Prediction</li>
-        <li>✔ Pediatric & Adult Vital Analysis</li>
-        <li>✔ Emergency Auto-Reallocation</li>
-        <li>✔ Doctor Workload Optimization</li>
-        <li>✔ Explainable AI Decisions</li>
-    </ul>
-</section>
 
-<footer>
-    <p>© 2026 Smart AI Hospital Queue System</p>
+    <div class="feature-container">
+
+        <div class="feature-card" onclick="toggleFeature(this)">
+            <div class="feature-title">✔ Real-time Delay Prediction</div>
+            <div class="feature-summary">
+                Predicts patient waiting time dynamically using AI
+                based on doctor availability and queue load.
+            </div>
+        </div>
+
+        <div class="feature-card" onclick="toggleFeature(this)">
+            <div class="feature-title">✔ Pediatric & Adult Vital Analysis</div>
+            <div class="feature-summary">
+                Evaluates vitals differently for children and adults
+                to determine accurate medical priority.
+            </div>
+        </div>
+
+        <div class="feature-card" onclick="toggleFeature(this)">
+            <div class="feature-title">✔ Emergency Auto-Reallocation</div>
+            <div class="feature-summary">
+                Automatically shifts queue positions when emergency
+                patients are detected.
+            </div>
+        </div>
+
+        <div class="feature-card" onclick="toggleFeature(this)">
+            <div class="feature-title">✔ Doctor Workload Optimization</div>
+            <div class="feature-summary">
+                Distributes patients intelligently to balance doctor
+                workload and reduce burnout.
+            </div>
+        </div>
+
+        <div class="feature-card" onclick="toggleFeature(this)">
+            <div class="feature-title">✔ Explainable AI Decisions</div>
+            <div class="feature-summary">
+                Provides transparent reasoning behind patient
+                prioritization decisions.
+            </div>
+        </div>
+
+    </div>
+</section>
+<section class="about">
+    <div class="about-container">
+        <h2>About Smart Hospital AI</h2>
+
+        <div class="about-box">
+            <p>
+                <span class="highlight">Smart Hospital AI</span> is an intelligent
+                queue management system designed to reduce hospital waiting time
+                using AI-based patient prioritization.
+            </p>
+
+            <p>
+                The system sorts patients based on their condition, age,
+                and department to ensure critical cases are handled first.
+            </p>
+
+            <p>
+                Built using Python Flask, Machine Learning, HTML, and CSS,
+                this project aims to modernize hospital management systems.
+            </p>
+        </div>
+    </div>
+</section>
+<footer class="footer">
+
+    <div class="footer-container">
+
+        <!-- Column 1: Brand -->
+        <div class="footer-col">
+            <h2 class="footer-logo">🏥 Smart Hospital AI</h2>
+            <p class="footer-tagline">
+                AI-Powered Queue Management System designed to improve
+                hospital efficiency and reduce patient waiting time.
+            </p>
+
+            <p class="footer-location">
+                📍 Gunupur, District Rayagada, Odisha
+            </p>
+
+            <button class="footer-btn">Request a Demo</button>
+        </div>
+
+        <!-- Column 2: System Features -->
+        <div class="footer-col">
+            <h4>System Features</h4>
+            <a href="#">AI Patient Prioritization</a>
+            <a href="#">Real-Time Queue Tracking</a>
+            <a href="#">PDF Token Generation</a>
+            <a href="#">Doctor Dashboard</a>
+            <a href="#">Admin Panel</a>
+        </div>
+
+        <!-- Column 3: Project -->
+        <div class="footer-col">
+            <h4>Project</h4>
+            <a href="#about">About Project</a>
+            <a href="#">How It Works</a>
+            <a href="#">Technologies Used</a>
+            <a href="#">GitHub Repository</a>
+            <a href="#">Demo Video</a>
+        </div>
+
+        <!-- Column 4: Technologies -->
+        <div class="footer-col">
+            <h4>Technologies</h4>
+            <p>Python Flask</p>
+            <p>Scikit-Learn</p>
+            <p>HTML & CSS</p>
+            <p>SQLite Database</p>
+        </div>
+
+        <!-- Column 5: Contact -->
+        <div class="footer-col">
+            <h4>Contact Us</h4>
+            <p>📧 teamexplorex19@gmail.com</p>
+            <p>📱 +91 90406 68151</p>
+            <p>🏥 Smart AI Healthcare System</p>
+
+            <div class="social-links">
+                <a href="#">Facebook</a>
+                <a href="#">LinkedIn</a>
+                <a href="#">X</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Section -->
+    <div class="footer-bottom">
+        <p>© 2026 Smart Hospital AI | Built using AI to improve healthcare efficiency.</p>
+    </div>
+
 </footer>
+
 <script>
 window.addEventListener("scroll", function() {
     const navbar = document.querySelector(".navbar");
@@ -238,6 +363,35 @@ circles.forEach(circle => {
 
     updateCounter();
 });
+</script>
+<script>
+function toggleFeature(card) {
+
+    const allCards = document.querySelectorAll(".feature-card");
+
+    allCards.forEach(c => {
+        if (c !== card) {
+            c.classList.remove("active");
+        }
+    });
+
+    card.classList.toggle("active");
+}
+</script>
+<script>
+    const footerCols = document.querySelectorAll('.footer-col');
+
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('show');
+            }
+        });
+    }, { threshold: 0.2 });
+
+    footerCols.forEach(col => {
+        observer.observe(col);
+    });
 </script>
 
 </body>
