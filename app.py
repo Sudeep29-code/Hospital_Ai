@@ -1169,17 +1169,18 @@ def register():
         current_time = datetime.now().strftime("%H:%M:%S")
 
         cursor.execute("""
-            SELECT d.id, d.name,
-                   COUNT(p.id) AS active_count
-            FROM doctors d
-            LEFT JOIN patients p
-                ON d.id = p.doctor_id
-                AND p.status IN ('waiting','emergency')
-            WHERE d.department = %s
-              AND d.is_active = 1
-            GROUP BY d.id
-            ORDER BY active_count ASC
-        """, (department, current_time))
+        SELECT d.id, d.name,
+            COUNT(p.id) AS active_count
+        FROM doctors d
+        LEFT JOIN patients p
+            ON d.id = p.doctor_id
+            AND p.status IN ('waiting','emergency')
+        WHERE d.department = %s
+        AND d.is_active = 1
+        GROUP BY d.id
+        ORDER BY active_count ASC
+        """, (department,))
+
 
         doctors = cursor.fetchall()
 
@@ -1247,8 +1248,8 @@ def register():
             department=department,
             queue_number=queue_number,
             estimated_wait=round(estimated_wait, 2),
-            priority=priority,
-            explanation=explanation
+            explanation=explanation,
+            priority=priority 
         )
 
     return render_template("register.html")

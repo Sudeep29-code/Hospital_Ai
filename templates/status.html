@@ -2,18 +2,146 @@
 <html>
 <head>
     <title>Live Queue Status</title>
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
+
+    background: linear-gradient(
+        270deg,
+        #1f1c2c,
+        #928dab,
+        #667eea,
+        #764ba2,
+        #ff6a88,
+        #36d1dc
+    );
+
+    background-size: 1200% 1200%;
+    animation: gradientFlow 25s ease infinite;
+}
+
+    /* Bigger Premium Card */
+    .container {
+        width: 950px;              /* Increased size */
+        padding: 70px;             /* More spacing */
+        border-radius: 25px;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+        text-align: left;
+        animation: fadeIn 0.6s ease;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    h2 {
+        font-size: 32px;
+        margin-bottom: 35px;
+    }
+
+    p {
+        font-size: 20px;
+        margin: 18px 0;
+    }
+
+    /* HIGH - Red Gradient */
+    .high-theme {
+        background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    }
+
+    /* MEDIUM - Golden Gradient */
+    .medium-theme {
+        background: linear-gradient(135deg, #f7971e, #ffd200);
+    }
+
+    /* LOW - Blue Gradient */
+    .low-theme {
+        background: linear-gradient(135deg, #36d1dc, #5b86e5);
+    }
+
+    .badge {
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-weight: bold;
+        font-size: 16px;
+        color: white;
+    }
+
+    .HIGH { background: #c0392b; }
+    .MEDIUM { background: #f39c12; color: black; }
+    .LOW { background: #2980b9; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+@keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
+@keyframes gradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    25% {
+        background-position: 50% 100%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    75% {
+        background-position: 50% 0%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+</style>
+
+
 </head>
-<body>
 
-<h2>Live Queue Status</h2>
+<body class="{% if patient.priority.strip().upper() == 'HIGH' %}high-theme{% elif patient.priority.strip().upper() == 'MEDIUM' %}medium-theme{% else %}low-theme{% endif %}">
 
-<p><strong>Patient:</strong> {{ patient.name }}</p>
-<p><strong>Department:</strong> {{ patient.department }}</p>
-<p><strong>Priority:</strong> {{ patient.priority }}</p>
-<p><strong>Status:</strong> {{ patient.status }}</p>
 
-<p><strong>Queue Position:</strong> {{ queue }}</p>
-<p><strong>Estimated Wait:</strong> {{ wait }} minutes</p>
+
+<div class="container">
+    <h2>Live Queue Status</h2>
+
+    <p><strong>Patient:</strong> {{ patient.name }}</p>
+    <p><strong>Department:</strong> {{ patient.department }}</p>
+    <p><strong>Priority:</strong> 
+    <span class="badge {{ patient.priority.strip().upper() }}">
+        {{ patient.priority.strip().upper() }}
+    </span>
+</p>
+    <p><strong>Status:</strong> {{ patient.status }}</p>
+
+    <p><strong>Queue Position:</strong> {{ queue }}</p>
+    <p><strong>Estimated Wait:</strong> {{ wait }} minutes</p>
+</div>
 
 </body>
 </html>
