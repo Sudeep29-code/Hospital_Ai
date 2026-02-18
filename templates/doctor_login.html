@@ -1,125 +1,135 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Doctor Login</title>
 
-<style>
-    body {
-    background: red !important;
-}
+    <style>
+        body {
+            background: red !important;
+        }
 
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    html, body {
-        height: 100%;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+        html,
+        body {
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    .main-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-    }
-
-    .left-section {
-        width: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #f4f7f9;
-        z-index: 2;
-    }
-
-    .login-container {
-        width: 320px;
-    }
-
-    h2 {
-        color: #0077cc;
-        text-align: center;
-        margin-bottom: 25px;
-    }
-
-    form {
-        background: white;
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-    }
-
-    input {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-    }
-
-    button {
-        width: 100%;
-        padding: 12px;
-        background-color: #0077cc;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    button:hover {
-        background-color: #005fa3;
-    }
-
-    /* RIGHT IMAGE SIDE */
-    .right-section {
-    flex: 1;
-    background-image: url("{{ url_for('static', filename='doctor-bg.png') }}");
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-position: center right;
-    background-color: #eaeff4; /* fallback background */
-}
-
-    @media (max-width: 900px) {
-        .right-section {
-            display: none;
+        .main-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
         }
 
         .left-section {
-            width: 100%;
+            width: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f4f7f9;
+            z-index: 2;
         }
-    }
-</style>
+
+        .login-container {
+            width: 320px;
+        }
+
+        h2 {
+            color: #0077cc;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        form {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0077cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005fa3;
+        }
+
+        /* RIGHT IMAGE SIDE */
+        .right-section {
+            flex: 1;
+            background-image: url("{{ url_for('static', filename='doctor-bg.png') }}");
+            background-repeat: no-repeat;
+            background-size: contain;
+            background-position: center right;
+            background-color: #eaeff4;
+            /* fallback background */
+        }
+
+        @media (max-width: 900px) {
+            .right-section {
+                display: none;
+            }
+
+            .left-section {
+                width: 100%;
+            }
+        }
+    </style>
 
 </head>
 
 <body>
 
-<div class="main-container">
+    <div class="main-container">
 
-    <div class="left-section">
-        <div class="login-container">
-            <h2>Doctor Login</h2>
-            <form method="POST">
-                <label>Doctor ID</label>
-                <input type="text" name="doctor_id" placeholder="Enter ID" required>
-                
-                <label>Password</label>
-                <input type="password" name="password" placeholder="••••••••" required>
+        <div class="left-section">
+            <div class="login-container">
+                <h2>Doctor Login</h2>
+                <form method="POST">
+                    <label>Doctor ID</label>
+                    <input type="text" name="doctor_id" placeholder="Enter ID" required>
 
-                <button type="submit">Login</button>
-            </form>
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Enter password" required>
+                    <p style="margin-top:15px; text-align:center;">
+                        <a href="{{ url_for('doctor_forgot_password') }}" style="color:#007bff; text-decoration:none;">
+                            Forgot Password?
+                        </a>
+                    </p>
+
+
+                    <button type="submit">Login</button>
+                </form>
+            </div>
         </div>
+
+        <div class="right-section"></div>
+
     </div>
 
-    <div class="right-section"></div>
-
-</div>
-
 </body>
+
 </html>

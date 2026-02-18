@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #f5f7fa, #e4ecf7);
+            margin: 40px;
+        }
+
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+
+        /* ===== Alert Box ===== */
+        .alert-success {
+            background-color: #d4edda;
+            padding: 12px;
+            border-radius: 6px;
+            color: #155724;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* ===== Buttons ===== */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            transition: 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary { background: #3498db; }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #f39c12; }
+        .btn-danger  { background: #e74c3c; }
+
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success:hover { background: #218838; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-danger:hover  { background: #c0392b; }
+
+        /* ===== Chart Card ===== */
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-top: 25px;
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 420px;
+            margin: auto;
+        }
+
+        /* ===== Doctor Table ===== */
+        .doctor-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .doctor-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 14px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .doctor-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .doctor-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-active {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .action-link {
+            text-decoration: none;
+        }
+
+        .nav-links {
+            margin-top: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <h1>Admin Dashboard</h1>
+
+    {% if optimized %}
+    <div class="alert-success">
+        ⚡ Global Optimization Successfully Executed!
+    </div>
+    {% endif %}
+
+    <h2>System Overview</h2>
+
+    <p><strong>Total Patients:</strong> {{ total_patients }}</p>
+    <p><strong>Total Doctors:</strong> {{ total_doctors }}</p>
+    <p><strong>Average Wait Time:</strong> {{ avg_wait }} minutes</p>
+
+    <h3>Current AI Weights</h3>
+    <p>Fairness Weight: {{ settings.fairness_weight }}</p>
+    <p>Wait Time Weight: {{ settings.wait_weight }}</p>
+
+    <h3>Overloaded Departments</h3>
+
+    {% if overloaded %}
+        <ul>
+            {% for dept in overloaded %}
+                <li>{{ dept.department }} ({{ dept.count }} waiting)</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No departments overloaded 🎉</p>
+    {% endif %}
+
+    <br>
+
+    <a href="/admin/force-optimize">
+        <button class="btn btn-success">🚀 Force Re-Optimization</button>
+    </a>
+
+    <!-- ================= CHART ================= -->
+    <div class="chart-card">
+        <h2>📊 Department Load Distribution</h2>
+        <div class="chart-container">
+            <canvas id="deptChart"></canvas>
+        </div>
+    </div>
+
+    <!-- ================= DOCTOR MANAGEMENT ================= -->
+    <hr style="margin:50px 0;">
+
+    <h2>👨‍⚕️ Doctor Management</h2>
+
+    <a href="/admin/add-doctor">
+        <button class="btn btn-primary">➕ Add Doctor</button>
+    </a>
+
+    <table class="doctor-table">
+        <tr>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Availability</th>
+            <th>Status</th>
+            <th>Workload</th>
+            <th>Performance</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for doctor in doctors %}
+        <tr>
+            <td>{{ doctor.name }}</td>
+            <td>{{ doctor.department }}</td>
+            <td>{{ doctor.available_from }} - {{ doctor.available_to }}</td>
+
+            <td>
+                {% if doctor.is_active|int == 1 %}
+                    <span class="status-active">🟢 Active</span>
+                {% else %}
+                    <span class="status-inactive">🔴 Inactive</span>
+                {% endif %}
+            </td>
+
+            <td>{{ doctor.current_load }}</td>
+            <td>{{ doctor.today_completed }}</td>
+
+            <td>
+                <a href="/admin/edit-doctor/{{ doctor.id }}" class="action-link">
+                    <button class="btn btn-primary">Edit</button>
+                </a>
+
+                <a href="/admin/toggle-doctor/{{ doctor.id }}" class="action-link">
+                    {% if doctor.is_active|int == 1 %}
+                        <button class="btn btn-warning">Deactivate</button>
+                    {% else %}
+                        <button class="btn btn-success">Activate</button>
+                    {% endif %}
+                </a>
+
+                <a href="/admin/delete-doctor/{{ doctor.id }}"
+                   class="action-link"
+                   onclick="return confirm('Are you sure you want to delete this doctor?');">
+                    <button class="btn btn-danger">Delete</button>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- ================= NAVIGATION ================= -->
+    <div class="nav-links">
+        <a href="/admin/ai-control">AI Control Panel</a>
+        <br><br>
+        <a href="/">Home</a>
+    </div>
+
+    <!-- ================= CHART SCRIPT ================= -->
+    <script>
+        let chart;
+
+        async function loadChartData() {
+            const response = await fetch("/chart_data");
+            const data = await response.json();
+
+            const ctx = document.getElementById("deptChart").getContext("2d");
+
+            const combined = data.departments.map((dept, i) => ({
+                dept,
+                count: data.counts[i]
+            })).sort((a, b) => b.count - a.count);
+
+            const labels = combined.map(item => item.dept);
+            const counts = combined.map(item => item.count);
+
+            const colors = labels.map(dept => {
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+
+                if (dept === "Emergency") {
+                    gradient.addColorStop(0, "#ff0844");
+                    gradient.addColorStop(1, "#ffb199");
+                } else {
+                    gradient.addColorStop(0, "#4facfe");
+                    gradient.addColorStop(1, "#00f2fe");
+                }
+                return gradient;
+            });
+
+            if (!chart) {
+                chart = new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Waiting Patients",
+                            data: counts,
+                            backgroundColor: colors,
+                            borderRadius: 14,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } else {
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = counts;
+                chart.data.datasets[0].backgroundColor = colors;
+                chart.update();
+            }
+        }
+
+        loadChartData();
+        setInterval(loadChartData, 5000);
+    </script>
+
+</body>
+</html>

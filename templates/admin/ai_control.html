@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            padding: 40px;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 500px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .back {
+            margin-top: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI Control Panel</h1>
+
+    <form method="POST">
+
+        <label>Fairness Weight</label>
+        <input type="number" step="0.1" min="0" max="1"
+               name="fairness_weight"
+               value="{{ settings.fairness_weight }}">
+
+        <label>Wait Time Weight</label>
+        <input type="number" step="0.1" min="0" max="1"
+               name="wait_weight"
+               value="{{ settings.wait_weight }}">
+
+        <label>Overload Threshold</label>
+        <input type="number"
+               name="overload_threshold"
+               value="{{ settings.overload_threshold }}">
+
+        <label>Cooldown Minutes</label>
+        <input type="number"
+               name="cooldown_minutes"
+               value="{{ settings.cooldown_minutes }}">
+
+        <button type="submit">Update AI Settings</button>
+    </form>
+
+    <a class="back" href="/admin/dashboard">← Back to Dashboard</a>
+</div>
+
+</body>
+</html>

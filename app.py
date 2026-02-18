@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, session, send_file, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 import os
 import random
@@ -15,12 +16,355 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import A4
 
-
-
-
-
 app = Flask(__name__)
 app.secret_key = "supersecretkey123"
+
+# ====== DECORATORS ======
+def admin_required(f):
+    def wrapper(*args, **kwargs):
+        if "admin_id" not in session:
+            return redirect("/admin/login")
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
+
+
+
+# Admin login
+
+@app.route("/admin/login", methods=["GET","POST"])
+def admin_login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM admins WHERE username=%s", (username,))
+        admin = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if admin and check_password_hash(admin["password_hash"], password):
+            session["admin_id"] = admin["id"]
+            return redirect("/admin/dashboard")
+
+        return "Invalid credentials"
+
+    return render_template("admin/login.html")
+
+
+# Admin Dashboard
+@app.route("/admin/dashboard")
+@admin_required
+def admin_dashboard():
+    optimized = request.args.get("optimized")
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    # Total patients
+    cursor.execute("SELECT COUNT(*) AS total_patients FROM patients")
+    total_patients = cursor.fetchone()["total_patients"]
+
+    # Total doctors
+    cursor.execute("SELECT COUNT(*) AS total_doctors FROM doctors")
+    total_doctors = cursor.fetchone()["total_doctors"]
+
+    # Average wait time
+    cursor.execute("SELECT AVG(predicted_delay) AS avg_wait FROM patients")
+    result = cursor.fetchone()
+    avg_wait = result["avg_wait"] if result["avg_wait"] else 0
+
+    # Overloaded departments (more than 5 waiting patients)
+    cursor.execute("""
+        SELECT department, COUNT(*) AS count
+        FROM patients
+        WHERE status = 'waiting'
+        GROUP BY department
+        HAVING COUNT(*) > 5
+    """)
+    overloaded = cursor.fetchall()
+
+    # AI Settings
+    cursor.execute("SELECT fairness_weight, wait_weight FROM ai_settings WHERE id = 1")
+    settings = cursor.fetchone()
+
+    # Department patient distribution (for chart)
+    cursor.execute("""
+        SELECT department, COUNT(*) AS count
+        FROM patients
+        WHERE status = 'waiting'
+        GROUP BY department
+    """)
+    dept_data = cursor.fetchall()
+
+    departments = [d["department"] for d in dept_data]
+    counts = [d["count"] for d in dept_data]
+
+    # Doctor Management Data
+    cursor.execute("""
+        SELECT 
+            d.id,
+            d.name,
+            d.department,
+            d.available_from,
+            d.available_to,
+            d.is_active,
+            COUNT(p.id) AS current_load,
+            SUM(CASE 
+                WHEN p.status = 'Completed'
+                AND DATE(p.completed_at) = CURDATE()
+                THEN 1 ELSE 0 
+            END) AS today_completed
+        FROM doctors d
+        LEFT JOIN patients p 
+            ON p.doctor_id = d.id
+        GROUP BY d.id
+    """)
+    
+    doctors = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "admin/dashboard.html",
+        total_patients=total_patients,
+        total_doctors=total_doctors,
+        avg_wait=round(avg_wait, 2),
+        overloaded=overloaded,
+        settings=settings,
+        optimized=optimized,
+        departments=departments,
+        counts=counts,
+        doctors=doctors
+    )
+
+
+
+@app.route("/admin/add-doctor", methods=["GET", "POST"])
+def add_doctor():
+    if request.method == "POST":
+        try:
+            name = request.form.get("name")
+            department = request.form.get("department")
+            password = request.form.get("password")
+            available_from = request.form.get("available_from")
+            available_to = request.form.get("available_to")
+
+            conn = get_db()
+            cursor = conn.cursor()
+
+            # 1️⃣ Insert doctor first (without doctor_code)
+            insert_query = """
+                INSERT INTO doctors 
+                (name, department, password, available_from, available_to)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+
+            cursor.execute(insert_query, 
+                (name, department, password, available_from, available_to)
+            )
+            conn.commit()
+
+            # 2️⃣ Get the auto-generated ID
+            doctor_id = cursor.lastrowid
+
+            # 3️⃣ Generate code like DOC001
+            doctor_code = f"DOC{str(doctor_id).zfill(3)}"
+
+            # 4️⃣ Update doctor with generated code
+            update_query = """
+                UPDATE doctors
+                SET doctor_code = %s
+                WHERE id = %s
+            """
+
+            cursor.execute(update_query, (doctor_code, doctor_id))
+            conn.commit()
+
+            cursor.close()
+            conn.close()
+
+            return render_template(
+                "admin/doctor_success.html",
+                doctor_code=doctor_code,
+                password=password,
+                name=name
+            )
+
+        except Exception as e:
+            return f"Error: {e}"
+
+    return render_template("admin/add_doctor.html")
+
+
+
+
+
+
+
+
+
+# Edit Doctor
+@app.route("/admin/edit-doctor/<int:doctor_id>", methods=["GET", "POST"])
+@admin_required
+def edit_doctor(doctor_id):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == "POST":
+        name = request.form["name"]
+        department = request.form["department"]
+        available_from = request.form["available_from"]
+        available_to = request.form["available_to"]
+
+        cursor.execute("""
+            UPDATE doctors
+            SET name=%s,
+                department=%s,
+                available_from=%s,
+                available_to=%s
+            WHERE id=%s
+        """, (name, department, available_from, available_to, doctor_id))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return redirect("/admin/dashboard")
+
+    cursor.execute("SELECT * FROM doctors WHERE id=%s", (doctor_id,))
+    doctor = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("admin/edit_doctor.html", doctor=doctor)
+
+
+# Activate/Deactivate Doctor
+@app.route("/admin/toggle-doctor/<int:doctor_id>")
+@admin_required
+def toggle_doctor(doctor_id):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT is_active FROM doctors WHERE id=%s", (doctor_id,))
+    doctor = cursor.fetchone()
+
+    new_status = 0 if doctor["is_active"] == 1 else 1
+
+    cursor.execute("""
+        UPDATE doctors
+        SET is_active=%s
+        WHERE id=%s
+    """, (new_status, doctor_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return redirect("/admin/dashboard")
+# Delete Doctor
+@app.route("/admin/delete-doctor/<int:doctor_id>")
+@admin_required
+def delete_doctor(doctor_id):
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Check active patients
+    cursor.execute("""
+        SELECT COUNT(*) FROM patients
+        WHERE doctor_id=%s
+        AND status IN ('waiting','emergency')
+    """, (doctor_id,))
+
+    active_patients = cursor.fetchone()[0]
+
+    if active_patients > 0:
+        cursor.close()
+        conn.close()
+        return "Cannot delete doctor with active patients."
+
+    cursor.execute("DELETE FROM doctors WHERE id=%s", (doctor_id,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect("/admin/dashboard")
+
+
+
+
+
+
+
+
+@app.route("/admin/force-optimize")
+@admin_required
+def force_optimize():
+
+    run_global_optimization()   # your main optimization function
+
+    return redirect(url_for("admin_dashboard", optimized="1"))
+
+
+
+
+
+
+
+# Admin logout
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_id", None)
+    return redirect("/admin/login")
+
+# Admin ai control
+@app.route("/admin/ai-control", methods=["GET", "POST"])
+@admin_required
+def ai_control():
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    if request.method == "POST":
+        fairness = float(request.form["fairness_weight"])
+        wait = float(request.form["wait_weight"])
+        # Ensure weights sum to 1
+        if fairness + wait != 1.0:
+            return "Fairness weight + Wait weight must equal 1.0"
+        overload = int(request.form["overload_threshold"])
+        cooldown = int(request.form["cooldown_minutes"])
+
+        cursor.execute("""
+            UPDATE ai_settings
+            SET fairness_weight=%s,
+                wait_weight=%s,
+                overload_threshold=%s,
+                cooldown_minutes=%s
+            WHERE id=1
+        """, (fairness, wait, overload, cooldown))
+
+        conn.commit()
+
+    cursor.execute("SELECT * FROM ai_settings WHERE id=1")
+    settings = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("admin/ai_control.html", settings=settings)
+
+
 
 # ========================
 # Load AI Model
@@ -99,6 +443,32 @@ def get_db():
     )
 
 
+
+def generate_doctor_code(department):
+    prefix_map = {
+        "General Medicine": "GM",
+        "Cardiology": "CR",
+        "Neurology": "NE",
+        "Orthopedics": "OR",
+        "Pediatrics": "PD"
+    }
+
+    prefix = prefix_map.get(department, "DR")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*) FROM doctors WHERE department=%s
+    """, (department,))
+
+    count = cursor.fetchone()[0] + 1
+
+    cursor.close()
+    conn.close()
+
+    return f"{prefix}{str(count).zfill(3)}"
+
 # ========================
 # AI Duration Prediction
 # ========================
@@ -167,36 +537,58 @@ def home():
     return render_template("index.html")
 
 # doctor login
-
 @app.route("/doctor_login", methods=["GET", "POST"])
 def doctor_login():
+
     if request.method == "POST":
+
         doctor_id = request.form["doctor_id"]
         password = request.form["password"]
 
         conn = get_db()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("""
-            SELECT id, name, department
-            FROM doctors
-            WHERE doctor_id=%s AND password=%s
-        """, (doctor_id, password))
-
+        cursor.execute("SELECT * FROM doctors WHERE doctor_code=%s", (doctor_id,))
         doctor = cursor.fetchone()
 
         cursor.close()
         conn.close()
 
-        if doctor:
-            session["doctor_id"] = doctor[0]
-            session["doctor_name"] = doctor[1]
-            session["department"] = doctor[2]   # 🔥 IMPORTANT
+        if doctor and doctor["password"] == password:
+
+            session["doctor_id"] = doctor["id"]
+            session["doctor_name"] = doctor["name"]
+            session["department"] = doctor["department"]   # 🔥 THIS WAS MISSING
+
             return redirect("/doctor_dashboard")
+
         else:
             return "Invalid ID or Password"
 
     return render_template("doctor_login.html")
+
+# Forgot password
+@app.route("/doctor/doctor_forgot_password", methods=["GET", "POST"])
+def doctor_forgot_password():
+    message = None
+
+    if request.method == "POST":
+        doctor_code = request.form.get("doctor_code")
+        new_password = request.form.get("new_password")
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        query = "UPDATE doctors SET password=%s WHERE doctor_code=%s"
+        cursor.execute(query, (new_password, doctor_code))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        message = "Password Updated Successfully!"
+
+    return render_template("doctor/forgot_password.html", message=message)
 
 
 # ========================
@@ -442,9 +834,53 @@ def calculate_optimization_score(department):
     wait_score = max(0, 100 - avg_wait)
 
     # 🔥 Multi-objective weighted optimization
-    final_score = 0.6 * fairness_score + 0.4 * wait_score
+    # Load dynamic weights
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT fairness_weight, wait_weight FROM ai_settings WHERE id=1")
+    settings = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    fairness_weight = settings["fairness_weight"]
+    wait_weight = settings["wait_weight"]
+
+    final_score = fairness_weight * fairness_score + wait_weight * wait_score
+
 
     return round(final_score, 2)
+
+
+
+# ========================
+# GLOBAL OPTIMIZATION ENGINE
+# ========================
+def run_global_optimization():
+
+    print("⚡ Admin triggered global optimization...")
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Get all departments
+    cursor.execute("SELECT DISTINCT department FROM doctors")
+    departments = cursor.fetchall()
+
+    for dept in departments:
+        department = dept[0]
+
+        # 1️⃣ Run reassignment logic
+        auto_reassign_patients(department)
+
+        # 2️⃣ Recalculate optimization score (for monitoring)
+        score = calculate_optimization_score(department)
+
+        print(f"Updated Optimization Score for {department}: {score}")
+
+    cursor.close()
+    conn.close()
 
 # ==============================
 # TRUE CONTINUOUS OPTIMIZER
@@ -499,17 +935,13 @@ def doctor_dashboard():
 
     # 🔥 Fetch patients assigned to this doctor
     cursor.execute("""
-        SELECT * FROM patients
+        SELECT *
+        FROM patients
         WHERE doctor_id = %s
         AND status IN ('waiting', 'emergency')
-        ORDER BY
-            CASE
-                WHEN priority = 'HIGH' THEN 1
-                WHEN priority = 'MEDIUM' THEN 2
-                ELSE 3
-            END,
-            id ASC
+        ORDER BY priority_score DESC, id ASC
     """, (doctor_id,))
+
 
     patients = cursor.fetchall()
 
@@ -580,10 +1012,21 @@ def doctor_dashboard():
 
     fairness_index = calculate_fairness(department)
     optimization_score = calculate_optimization_score(department)
+    # 🔥 Determine System Status (Step 1A)
+    total_assigned = len(regular_patients) + len(emergency_patients)
+
+    if total_assigned > 10:
+        system_status = "Overloaded"
+    elif total_assigned > 5:
+        system_status = "Moderate Load"
+    else:
+        system_status = "Stable"
+
+    
 
 
     return render_template(
-    "doctor_dashboard.html",
+    "doctor_dashboard.jinja",
     doctor_name=session.get("doctor_name"),
     department=department,
     regular_patients=regular_patients,
@@ -594,8 +1037,36 @@ def doctor_dashboard():
     recommendation=recommendation,
     logs=logs,
     fairness_index=fairness_index,
-    optimization_score=optimization_score
+    optimization_score=optimization_score,
+    system_status=system_status
 )
+
+# chart_data route for AJAX calls
+
+@app.route("/chart_data")
+def chart_data():
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT department, COUNT(*) as total
+        FROM patients
+        WHERE status='waiting'
+        GROUP BY department
+    """)
+
+    data = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    departments = [row["department"] for row in data]
+    counts = [row["total"] for row in data]
+
+    return {
+        "departments": departments,
+        "counts": counts
+    }
 
 
 
@@ -640,7 +1111,6 @@ def complete_patient(patient_id):
 
 
 
-
 # ========================
 # Patient Register
 # ========================
@@ -674,13 +1144,13 @@ def register():
         priority = calculate_priority(age, oxygen, temperature, bp, disease)
         status = "emergency" if priority == "HIGH" else "waiting"
 
-        # 🔥 ML prediction BEFORE insert
+        # ========================
+        # ML Prediction
+        # ========================
         predicted_time = predict_duration(
-        age, oxygen, bp, temperature,
-        department, priority, disease
+            age, oxygen, bp, temperature,
+            department, priority, disease
         )
-
-
 
         no_show_prob = predict_no_show(
             age,
@@ -693,8 +1163,11 @@ def register():
         cursor = conn.cursor()
 
         # ========================
-        # REAL-TIME LOAD BALANCING
+        # SMART SHIFT-BASED LOAD BALANCING
         # ========================
+
+        current_time = datetime.now().strftime("%H:%M:%S")
+
         cursor.execute("""
             SELECT d.id, d.name,
                    COUNT(p.id) AS active_count
@@ -702,9 +1175,11 @@ def register():
             LEFT JOIN patients p
                 ON d.id = p.doctor_id
                 AND p.status IN ('waiting','emergency')
-            WHERE d.department=%s
+            WHERE d.department = %s
+              AND d.is_active = 1
             GROUP BY d.id
-        """, (department,))
+            ORDER BY active_count ASC
+        """, (department, current_time))
 
         doctors = cursor.fetchall()
 
@@ -720,11 +1195,14 @@ def register():
         if selected_doctor:
             doctor_id = selected_doctor[0]
             doctor_name = selected_doctor[1]
-            explanation = f"Assigned to Dr. {doctor_name} due to lowest active load ({lowest_load} patients)."
+            explanation = (
+                f"Assigned to Dr. {doctor_name} "
+                f"(Active Shift | Lowest Load: {lowest_load} patients)."
+            )
         else:
             doctor_id = None
             doctor_name = "Not Assigned"
-            explanation = "No doctor available."
+            explanation = "No active doctor available in this department at this time."
 
         # ========================
         # INSERT PATIENT
@@ -774,6 +1252,7 @@ def register():
         )
 
     return render_template("register.html")
+
 
 
 

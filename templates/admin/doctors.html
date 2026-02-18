@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Manage Doctors</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 40px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            color: white;
+            background-color: red;
+            border: none;
+        }
+
+        .edit-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .toggle-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Manage Doctors</h2>
+
+    {% if doctors and doctors|length > 0 %}
+    <table>
+        <tr>
+            <th>Doctor Code</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Status</th>
+        </tr>
+
+        {% for doctor in doctors %}
+        <tr>
+            <td>{{ doctor.doctor_code }}</td>
+            <td>{{ doctor.name }}</td>
+            <td>{{ doctor.department }}</td>
+            <td>
+                {% if doctor.status == 'Active' %}
+                <span style="color:green;"><b>Active</b></span>
+                {% else %}
+                <span style="color:red;"><b>Inactive</b></span>
+                {% endif %}
+            </td>
+
+
+        </tr>
+        {% endfor %}
+    </table>
+
+    {% else %}
+    <p>No doctors found in the system.</p>
+    {% endif %}
+
+    <br><br>
+    <a href="/admin/dashboard">
+        <button>Back to Dashboard</button>
+    </a>
+
+</body>
+
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Doctor</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #f5f7fa, #e4ecf7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .form-card {
+            background: white;
+            padding: 35px;
+            width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-card h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #34495e;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            transition: 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 10px;
+            transition: 0.3s ease;
+        }
+
+        .btn-update {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-update:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: #95a5a6;
+            color: white;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .btn-back:hover {
+            background: #7f8c8d;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="form-card">
+        <h2>👨‍⚕️ Edit Doctor</h2>
+
+        <form method="POST">
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" value="{{ doctor.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" name="department" value="{{ doctor.department }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Available From</label>
+                <input type="time" name="available_from" value="{{ doctor.available_from }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Available To</label>
+                <input type="time" name="available_to" value="{{ doctor.available_to }}" required>
+            </div>
+
+            <button type="submit" class="btn btn-update">
+                Update Doctor
+            </button>
+
+        </form>
+
+        <a href="/admin/dashboard" class="btn-back">
+            ← Back to Dashboard
+        </a>
+
+    </div>
+
+</body>
+</html>

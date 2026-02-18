@@ -974,3 +974,10 @@ body:has(.doctor-login-wrapper) {
 }
 
 
+
+.chart-container {
+    width: 100%;
+    max-width: 1000px;
+    height: 400px;   /* Fixed clean height */
+    margin: auto;
+}
