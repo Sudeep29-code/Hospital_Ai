@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Edit Doctor</title>
 
@@ -89,7 +90,6 @@
         .btn-back:hover {
             background: #7f8c8d;
         }
-
     </style>
 </head>
 
@@ -107,7 +107,12 @@
 
             <div class="form-group">
                 <label>Department</label>
-                <input type="text" name="department" value="{{ doctor.department }}" required>
+                <input type="text" value="{{ doctor.department }}" readonly class="form-control">
+
+                <small style="color: gray;">
+                    Department cannot be changed after doctor creation.
+                </small>
+
             </div>
 
             <div class="form-group">
@@ -133,4 +138,5 @@
     </div>
 
 </body>
+
 </html>

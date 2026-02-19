@@ -246,19 +246,16 @@ def edit_doctor(doctor_id):
 
     if request.method == "POST":
         name = request.form["name"]
-        department = request.form["department"]
         available_from = request.form["available_from"]
         available_to = request.form["available_to"]
 
         cursor.execute("""
             UPDATE doctors
             SET name=%s,
-                department=%s,
                 available_from=%s,
                 available_to=%s
             WHERE id=%s
-        """, (name, department, available_from, available_to, doctor_id))
-
+        """, (name, available_from, available_to, doctor_id))
         conn.commit()
         cursor.close()
         conn.close()
