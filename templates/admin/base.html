@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hospital AI Operations Platform</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h2 class="logo">HAIOP</h2>
+        <nav>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/ai-control">AI Control</a>
+            <a href="/admin/assignment-explanations">AI Logs</a>
+            <a href="/admin/logout">Logout</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <header class="topbar">
+            <span>Hospital AI Admin Panel</span>
+            <span class="status">🟢 System Stable</span>
+        </header>
+
+        <section class="content">
+            {% block content %}{% endblock %}
+        </section>
+    </main>
+
+</div>
+
+<!-- Dashboard JS -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</body>
+</html>

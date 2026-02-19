@@ -10,6 +10,22 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import joblib
 import numpy as np
 import shap
+from statsmodels.tsa.arima.model import ARIMA
+import json
+from flask import flash
+
+
+
+# ========================
+# RL Q-LEARNING SETTINGS
+# ========================
+
+Q_TABLE_FILE = "q_table.json"
+ACTIONS = ["increase_fairness", "increase_wait", "balance"]
+ALPHA = 0.1      # learning rate
+GAMMA = 0.9      # discount factor
+EPSILON = 0.2    # exploration rate
+
 
 
 
@@ -106,6 +122,12 @@ def admin_dashboard():
 
     departments = [d["department"] for d in dept_data]
     counts = [d["count"] for d in dept_data]
+    # 🔮 Forecast Next Hour Arrivals
+    forecast_data = {}
+
+    for dept in departments:
+        forecast_data[dept] = forecast_next_hour(dept)
+
 
     # Doctor Management Data
     cursor.execute("""
@@ -144,7 +166,8 @@ def admin_dashboard():
         optimized=optimized,
         departments=departments,
         counts=counts,
-        doctors=doctors
+        doctors=doctors,
+        forecast_data=forecast_data
     )
 
 
@@ -279,31 +302,28 @@ def toggle_doctor(doctor_id):
 @app.route("/admin/delete-doctor/<int:doctor_id>")
 @admin_required
 def delete_doctor(doctor_id):
-
     conn = get_db()
     cursor = conn.cursor()
 
-    # Check active patients
-    cursor.execute("""
-        SELECT COUNT(*) FROM patients
-        WHERE doctor_id=%s
-        AND status IN ('waiting','emergency')
-    """, (doctor_id,))
+    try:
+        cursor.execute("""
+            UPDATE doctors
+            SET is_active = 0
+            WHERE id = %s
+        """, (doctor_id,))
+        conn.commit()
+        flash("Doctor deactivated successfully.", "success")
 
-    active_patients = cursor.fetchone()[0]
+    except Exception as e:
+        conn.rollback()
+        flash("Error while deactivating doctor.", "danger")
 
-    if active_patients > 0:
+    finally:
         cursor.close()
         conn.close()
-        return "Cannot delete doctor with active patients."
 
-    cursor.execute("DELETE FROM doctors WHERE id=%s", (doctor_id,))
-    conn.commit()
+    return redirect(url_for("admin_dashboard"))
 
-    cursor.close()
-    conn.close()
-
-    return redirect("/admin/dashboard")
 
 
 
@@ -321,6 +341,30 @@ def force_optimize():
     return redirect(url_for("admin_dashboard", optimized="1"))
 
 
+@app.route("/admin/assignment-explanations")
+@admin_required
+def assignment_explanations():
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT ae.*, p.name AS patient_name, d.name AS doctor_name
+        FROM assignment_explanations ae
+        JOIN patients p ON ae.patient_id = p.id
+        JOIN doctors d ON ae.doctor_id = d.id
+        ORDER BY ae.created_at DESC
+        LIMIT 20
+    """)
+
+    data = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("admin/assignment_explanation.html",
+        assignments=data
+    )
 
 
 
@@ -456,6 +500,142 @@ def get_db():
         database="hospital_db"
     )
 
+# ========================
+# TIME SERIES FORECASTING
+# ========================
+
+def get_hourly_arrivals(department, hours=48):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT 
+            DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') AS hour_slot,
+            COUNT(*) AS count
+        FROM patients
+        WHERE department = %s
+        AND created_at >= NOW() - INTERVAL %s HOUR
+        GROUP BY hour_slot
+        ORDER BY hour_slot ASC
+    """, (department, hours))
+
+    data = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return data
+
+
+def forecast_moving_average(department):
+
+    data = get_hourly_arrivals(department)
+
+    if len(data) < 3:
+        return 0
+
+    counts = [d["count"] for d in data]
+
+    forecast = sum(counts[-3:]) / 3
+
+    return round(forecast, 2)
+
+
+def forecast_arima(department):
+
+    data = get_hourly_arrivals(department)
+
+    if len(data) < 6:
+        return forecast_moving_average(department)
+
+    try:
+        counts = [d["count"] for d in data]
+
+        model = ARIMA(counts, order=(1,1,1))
+        model_fit = model.fit()
+
+        forecast = model_fit.forecast(steps=1)
+
+        return round(float(forecast[0]), 2)
+
+    except Exception as e:
+        print("ARIMA error:", e)
+        return forecast_moving_average(department)
+
+
+def forecast_next_hour(department):
+
+    ma_forecast = forecast_moving_average(department)
+    arima_forecast = forecast_arima(department)
+
+    final_forecast = (ma_forecast * 0.4) + (arima_forecast * 0.6)
+
+    return round(final_forecast, 2)
+
+
+
+# ========================
+# Q-TABLE FUNCTIONS
+# ========================
+
+def load_q_table():
+    try:
+        with open(Q_TABLE_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_q_table(q_table):
+    with open(Q_TABLE_FILE, "w") as f:
+        json.dump(q_table, f)
+
+
+def get_system_state(department):
+
+    forecast = forecast_next_hour(department)
+
+    if forecast < 5:
+        load_state = "low"
+    elif forecast < 15:
+        load_state = "medium"
+    else:
+        load_state = "high"
+
+    return load_state
+
+
+def choose_action(state):
+
+    q_table = load_q_table()
+
+    if random.uniform(0,1) < EPSILON:
+        return random.choice(ACTIONS)
+
+    if state not in q_table:
+        q_table[state] = {a: 0 for a in ACTIONS}
+        save_q_table(q_table)
+
+    return max(q_table[state], key=q_table[state].get)
+
+def update_q_table(state, action, reward, next_state):
+
+    q_table = load_q_table()
+
+    if state not in q_table:
+        q_table[state] = {a: 0 for a in ACTIONS}
+
+    if next_state not in q_table:
+        q_table[next_state] = {a: 0 for a in ACTIONS}
+
+    current_q = q_table[state][action]
+    max_future_q = max(q_table[next_state].values())
+
+    new_q = current_q + ALPHA * (reward + GAMMA * max_future_q - current_q)
+
+    q_table[state][action] = new_q
+
+    save_q_table(q_table)
 
 
 def generate_doctor_code(department):
@@ -886,8 +1066,11 @@ def calculate_optimization_score(department):
     # Normalize fairness (0–10 scale)
     fairness_score = max(0, 100 - fairness * 15)
 
-    # Normalize wait (assuming 0–60 mins)
-    wait_score = max(0, 100 - avg_wait)
+    future_load = forecast_next_hour(department)
+    future_penalty = future_load * 2
+
+    wait_score = max(0, 100 - avg_wait - future_penalty)
+
 
     # 🔥 Multi-objective weighted optimization
     # Load dynamic weights
@@ -916,7 +1099,9 @@ def optimize_assignments_graph(department):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    # Get waiting + emergency patients
+    # ========================
+    # GET WAITING + EMERGENCY PATIENTS
+    # ========================
     cursor.execute("""
         SELECT * FROM patients
         WHERE department=%s
@@ -924,7 +1109,9 @@ def optimize_assignments_graph(department):
     """, (department,))
     patients = cursor.fetchall()
 
-    # Get active doctors
+    # ========================
+    # GET ACTIVE DOCTORS
+    # ========================
     cursor.execute("""
         SELECT * FROM doctors
         WHERE department=%s
@@ -932,13 +1119,59 @@ def optimize_assignments_graph(department):
     """, (department,))
     doctors = cursor.fetchall()
 
+    # ========================
+    # SAFETY CHECK
+    # ========================
     if not patients or not doctors:
         cursor.close()
         conn.close()
         return
 
-    import numpy as np
+    # ========================
+    # PRE-CALCULATE DOCTOR LOADS (PERFORMANCE FIX)
+    # ========================
+    doctor_loads = {}
 
+    cursor.execute("""
+        SELECT doctor_id, COUNT(*) AS doctor_load
+        FROM patients
+        WHERE department=%s
+        AND status IN ('waiting','emergency')
+        GROUP BY doctor_id
+    """, (department,))
+
+    load_data = cursor.fetchall()
+
+    # Initialize all doctors to 0 load
+    for d in doctors:
+        doctor_loads[d["id"]] = 0
+
+    # Update with actual loads
+    for row in load_data:
+        doctor_loads[row["doctor_id"]] = row["doctor_load"]
+
+    import numpy as np
+    from scipy.optimize import linear_sum_assignment
+
+    # ========================
+    # RL DECIDES WEIGHTS
+    # ========================
+    state = get_system_state(department)
+    action = choose_action(state)
+
+    if action == "increase_fairness":
+        fairness_weight = 0.7
+        wait_weight = 0.3
+    elif action == "increase_wait":
+        fairness_weight = 0.3
+        wait_weight = 0.7
+    else:
+        fairness_weight = 0.5
+        wait_weight = 0.5
+
+    # ========================
+    # BUILD COST MATRIX
+    # ========================
     cost_matrix = np.zeros((len(patients), len(doctors)))
 
     for i, p in enumerate(patients):
@@ -959,39 +1192,93 @@ def optimize_assignments_graph(department):
             no_show = p.get("no_show_probability", 0.1)
             expected_time = predicted * (1 - no_show)
 
-            # 🔥 Doctor current load
-            cursor.execute("""
-                SELECT COUNT(*) AS doctor_load
-                FROM patients
-                WHERE doctor_id=%s
-                AND status IN ('waiting','emergency')
-            """, (d["id"],))
-            load = cursor.fetchone()["doctor_load"]
+            # 🔥 Doctor load (NO SQL HERE — optimized)
+            load = doctor_loads.get(d["id"], 0)
 
             # 🔥 Emergency bonus
             priority_bonus = -10 if p["priority"] == "HIGH" else 0
 
-            cost = expected_time + (load * 5) + priority_bonus
+            cost = (wait_weight * expected_time) + (fairness_weight * load * 5) + priority_bonus
 
             cost_matrix[i][j] = cost
 
-    # 🔥 Hungarian Algorithm
+    # ========================
+    # HUNGARIAN ALGORITHM
+    # ========================
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
 
-    # Apply assignments
+    # ========================
+    # APPLY ASSIGNMENTS
+    # ========================
     for r, c in zip(row_ind, col_ind):
-        patient_id = patients[r]["id"]
-        doctor_id = doctors[c]["id"]
 
+        patient = patients[r]
+        doctor = doctors[c]
+
+        patient_id = patient["id"]
+        doctor_id = doctor["id"]
+
+        # Recalculate values for explanation
+        predicted, _ = predict_duration(
+            patient["age"],
+            patient["oxygen"],
+            patient["bp"],
+            patient["temperature"],
+            patient["department"],
+            patient["priority"],
+            patient["disease"]
+        )
+
+        no_show = patient.get("no_show_probability", 0.1)
+        expected_time = predicted * (1 - no_show)
+
+        load = doctor_loads.get(doctor_id, 0)
+
+        priority_bonus = -10 if patient["priority"] == "HIGH" else 0
+
+        final_cost = (wait_weight * expected_time) + (fairness_weight * load * 5) + priority_bonus
+
+        # 🔥 UPDATE PATIENT
         cursor.execute("""
             UPDATE patients
             SET doctor_id=%s
             WHERE id=%s
         """, (doctor_id, patient_id))
 
+        # Update in-memory load
+        doctor_loads[doctor_id] += 1
+
+        # 🔥 INSERT EXPLANATION LOG
+        cursor.execute("""
+            INSERT INTO assignment_explanations
+            (patient_id, doctor_id, department,
+            predicted_duration, doctor_load,
+            no_show_probability, rl_action, final_cost)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            patient_id,
+            doctor_id,
+            department,
+            predicted,
+            load,
+            no_show,
+            action,
+            round(final_cost, 2)
+        ))
+
     conn.commit()
+
+    # ========================
+    # RL REWARD UPDATE
+    # ========================
+    new_score = calculate_optimization_score(department)
+    next_state = get_system_state(department)
+    reward = new_score
+    update_q_table(state, action, reward, next_state)
+
     cursor.close()
     conn.close()
+
 
 
 # ========================
@@ -1011,13 +1298,18 @@ def run_global_optimization():
     for dept in departments:
         department = dept[0]
 
-        # 1️⃣ Run reassignment logic
+    predicted_arrivals = forecast_next_hour(department)
+
+    print(f"🔮 Predicted next hour arrivals for {department}: {predicted_arrivals}")
+
+    if predicted_arrivals > 10:
+        print("⚠ Upcoming overload predicted. Pre-optimizing...")
         optimize_assignments_graph(department)
 
-        # 2️⃣ Recalculate optimization score (for monitoring)
-        score = calculate_optimization_score(department)
+    # Still calculate optimization score
+    score = calculate_optimization_score(department)
+    print(f"Updated Optimization Score for {department}: {score}")
 
-        print(f"Updated Optimization Score for {department}: {score}")
 
     cursor.close()
     conn.close()

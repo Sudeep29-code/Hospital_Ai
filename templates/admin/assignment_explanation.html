@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assignment Explanations</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .top-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: center;
+        }
+
+        td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .cost {
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        .strategy {
+            font-weight: bold;
+            color: #8e44ad;
+        }
+
+        .risk-high {
+            color: red;
+            font-weight: bold;
+        }
+
+        .risk-medium {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .risk-low {
+            color: green;
+            font-weight: bold;
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🔎 Why This Assignment Happened</h2>
+
+<div class="top-bar">
+    <a href="/admin/dashboard" class="btn">⬅ Back to Dashboard</a>
+    <a href="/admin/force-optimize" class="btn">⚡ Run Optimization</a>
+</div>
+
+<table>
+    <tr>
+        <th>Patient</th>
+        <th>Doctor</th>
+        <th>Predicted Duration</th>
+        <th>Doctor Load</th>
+        <th>No-Show Probability</th>
+        <th>RL Strategy</th>
+        <th>Final Cost Score</th>
+        <th>Timestamp</th>
+    </tr>
+
+    {% for a in assignments %}
+    <tr>
+        <td>{{ a.patient_name }}</td>
+        <td>Dr. {{ a.doctor_name }}</td>
+        <td>{{ a.predicted_duration }} min</td>
+        <td>{{ a.doctor_load }}</td>
+
+        <td>
+            {% if a.no_show_probability > 0.5 %}
+                <span class="risk-high">🔴 {{ a.no_show_probability }}</span>
+            {% elif a.no_show_probability > 0.2 %}
+                <span class="risk-medium">🟡 {{ a.no_show_probability }}</span>
+            {% else %}
+                <span class="risk-low">🟢 {{ a.no_show_probability }}</span>
+            {% endif %}
+        </td>
+
+        <td class="strategy">
+            {{ a.rl_action }}
+        </td>
+
+        <td class="cost">
+            {{ a.final_cost }}
+        </td>
+
+        <td>
+            {{ a.created_at }}
+        </td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+<div class="footer-note">
+    <p>
+        This system stores real-time Reinforcement Learning decisions including 
+        predicted duration, workload balancing, no-show risk, and final cost optimization.
+    </p>
+</div>
+
+</body>
+</html>
