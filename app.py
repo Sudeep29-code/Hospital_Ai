@@ -1860,7 +1860,7 @@ def send_email_with_pdf(receiver_email, pdf_path):
     try:
         msg = EmailMessage()
         msg["Subject"] = "Smart Hospital AI - Token Details"
-        msg["From"] = "teamexplorex19@gmail.com"
+        msg["From"] = "@gmail.com"
         msg["To"] = receiver_email
         msg.set_content("Thank you for registering. Your token PDF is attached.")
 
@@ -1871,7 +1871,7 @@ def send_email_with_pdf(receiver_email, pdf_path):
         msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
 
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login("teamexplorex19@gmail.com", "qhsz wloa bfqw xdiq")
+        server.login("@gmail.com", "")
         server.send_message(msg)
         server.quit()
 
