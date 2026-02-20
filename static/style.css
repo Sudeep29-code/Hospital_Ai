@@ -1342,3 +1342,37 @@ body:has(.doctor-login-wrapper) {
     max-height: 120px;
     opacity: 1;
 }
+/* ============================= */
+/* ECG Heartbeat Animation */
+/* ============================= */
+.ecg-container {
+    width: 100%;
+    overflow: hidden;
+    margin-top: 30px;
+}
+
+.ecg {
+    width: 100%;
+    height: 100px;
+}
+
+.ecg-line {
+    fill: none;
+    stroke: #e60023;  /* Red ECG */
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+    animation: ecgMove 3s linear infinite;
+    filter: drop-shadow(0 0 10px rgba(230, 0, 35, 0.9));
+}
+
+/* ECG Drawing Animation */
+@keyframes ecgMove {
+    0% {
+        stroke-dashoffset: 2000;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
