@@ -3,6 +3,8 @@ from scipy.optimize import linear_sum_assignment
 from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 import os
+import smtplib                     
+from email.message import EmailMessage
 import random
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -493,7 +495,7 @@ def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="kaibalya123",
+        password="aditya@123",
         database="hospital_db"
     )
 
@@ -1550,6 +1552,7 @@ def register():
     if request.method == "POST":
 
         name = request.form["name"]
+        user_email = request.form["email"]   # 👈 ADD THIS LINE
         aadhaar = request.form["aadhaar"]
         gender = request.form["gender"]
         dob = request.form["dob"]
@@ -1641,21 +1644,27 @@ def register():
         # INSERT PATIENT
         # ========================
         cursor.execute("""
-        INSERT INTO patients
-        (name, age, aadhaar, gender, dob, phone, whatsapp,
-        blood_group, address, department,
-        disease, priority, status, oxygen, bp, temperature,
-        doctor_id, consultation_duration, no_show_probability,
-        duration_explanation, no_show_explanation)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            name, age, aadhaar, gender, dob, phone, whatsapp,
-            blood_group, address, department,
-            disease, priority, status, oxygen, bp, temperature,
-            doctor_id, predicted_time, no_show_prob,
-            str(duration_explanation),
-            str(no_show_explanation)
-        ))
+            INSERT INTO patients
+            (name, age, aadhaar, gender, dob, phone, whatsapp,
+            blood_group, address, department, disease,
+            priority, status, oxygen, bp, temperature,
+            doctor_id, consultation_duration,
+            no_show_probability, duration_explanation,
+            no_show_explanation, email)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,
+                    %s,%s,%s,%s,%s,
+                    %s,%s,
+                    %s,%s,
+                    %s,%s)
+            """, (
+                name, age, aadhaar, gender, dob, phone, whatsapp,
+                blood_group, address, department, disease,
+                priority, status, oxygen, bp, temperature,
+                doctor_id, predicted_time,
+                no_show_prob, str(duration_explanation),
+                str(no_show_explanation), user_email
+            ))
 
 
         conn.commit()
@@ -1931,6 +1940,7 @@ def download_token(patient_id):
 
     details_table = Table(details_data, colWidths=[200, 250])
 
+<<<<<<< HEAD
     details_table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('BACKGROUND', (0, 0), (0, -1), colors.HexColor("#EAF2F8")),
@@ -1981,6 +1991,10 @@ def download_token(patient_id):
 
     doc.build(elements, onFirstPage=add_page_border)
 
+=======
+    doc.build(elements)
+    send_email_with_pdf(patient["email"], filepath)
+>>>>>>> ad9bfcba40e698eae618d58902d8b938cda0b472
     return send_file(filepath, as_attachment=True)
 
 @app.route("/simulate")
@@ -2007,10 +2021,33 @@ def simulate():
     Current Estimated Delay: {round(current_delay,2)} minutes<br>
     If 1 more doctor added → Delay becomes: {round(new_delay,2)} minutes
     """
+# ========================
+# Email Sending Function
+# ========================
 
+def send_email_with_pdf(receiver_email, pdf_path):
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = "Smart Hospital AI - Token Details"
+        msg["From"] = "@gmail.com"
+        msg["To"] = receiver_email
+        msg.set_content("Thank you for registering. Your token PDF is attached.")
 
+        with open(pdf_path, "rb") as f:
+            file_data = f.read()
+            file_name = pdf_path.split("/")[-1]
 
+        msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
 
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login("@gmail.com", "")
+        server.send_message(msg)
+        server.quit()
+
+        print("Email sent successfully")
+
+    except Exception as e:
+        print("Email error:", e)
 # ========================
 # Run App
 # ========================
