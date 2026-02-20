@@ -145,12 +145,22 @@ body {
 }
 
 .btn-secondary {
-    color: #1495b8;
+    background: #00bbcc;
+    color: white;
+    padding: 12px 28px;
+    border-radius: 30px;
     text-decoration: none;
     font-weight: 600;
-    padding: 12px 20px;
+    transition: 0.3s;
 }
 
+.btn-primary:hover {
+    background: #1495b8;
+}
+
+.btn-secondary:hover {
+    background: #1495b8;
+}
 /* Stats */
 .hero-stats {
     display: flex;
