@@ -495,7 +495,7 @@ def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="aditya@123",
+        password="kaibalya123",
         database="hospital_db"
     )
 
@@ -1784,6 +1784,10 @@ def live_status(patient_id):
 # Download Token PDF
 # ========================
 
+# ========================
+# Download Token PDF
+# ========================
+
 @app.route("/download/<int:patient_id>")
 def download_token(patient_id):
 
@@ -1837,7 +1841,7 @@ def download_token(patient_id):
         canvas.restoreState()
 
     # =========================
-    # HEADER SECTION (Logo + Name)
+    # HEADER SECTION
     # =========================
     logo_path = "static/logo.png"
 
@@ -1855,11 +1859,9 @@ def download_token(patient_id):
 
     if os.path.exists(logo_path):
         logo = Image(logo_path, width=110, height=110)
-        header_table = Table([[logo, hospital_name]],
-                             colWidths=[120, 330])
+        header_table = Table([[logo, hospital_name]], colWidths=[120, 330])
     else:
-        header_table = Table([[hospital_name]],
-                             colWidths=[450])
+        header_table = Table([[hospital_name]], colWidths=[450])
 
     header_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -1868,7 +1870,6 @@ def download_token(patient_id):
     elements.append(header_table)
     elements.append(Spacer(1, 15))
 
-    # Blue Divider Line
     divider = Table([[""]], colWidths=[450], rowHeights=[3])
     divider.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#0B3C5D"))
@@ -1891,7 +1892,7 @@ def download_token(patient_id):
     elements.append(Spacer(1, 25))
 
     # =========================
-    # PRIORITY BADGE COLOR
+    # PRIORITY BADGE
     # =========================
     if patient["priority"] == "HIGH":
         badge_color = colors.red
@@ -1937,10 +1938,7 @@ def download_token(patient_id):
         ["Estimated Consultation Time", f"{predicted_time} mins"],
         ["Generated At", datetime.now().strftime("%d-%m-%Y %H:%M")]
     ]
-
     details_table = Table(details_data, colWidths=[200, 250])
-
-<<<<<<< HEAD
     details_table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('BACKGROUND', (0, 0), (0, -1), colors.HexColor("#EAF2F8")),
@@ -1961,8 +1959,10 @@ def download_token(patient_id):
     width = bounds[2] - bounds[0]
     height = bounds[3] - bounds[1]
 
-    drawing = Drawing(size, size,
-                      transform=[size/width, 0, 0, size/height, 0, 0])
+    drawing = Drawing(
+        size, size,
+        transform=[size/width, 0, 0, size/height, 0, 0]
+    )
     drawing.add(qr_code)
 
     elements.append(drawing)
@@ -1989,12 +1989,15 @@ def download_token(patient_id):
         footer_style
     ))
 
+    # Build PDF with border
     doc.build(elements, onFirstPage=add_page_border)
 
-=======
-    doc.build(elements)
-    send_email_with_pdf(patient["email"], filepath)
->>>>>>> ad9bfcba40e698eae618d58902d8b938cda0b472
+    # Send Email (if function exists)
+    try:
+        send_email_with_pdf(patient["email"], filepath)
+    except Exception as e:
+        print("Email sending failed:", e)
+
     return send_file(filepath, as_attachment=True)
 
 @app.route("/simulate")
@@ -2029,7 +2032,7 @@ def send_email_with_pdf(receiver_email, pdf_path):
     try:
         msg = EmailMessage()
         msg["Subject"] = "Smart Hospital AI - Token Details"
-        msg["From"] = "@gmail.com"
+        msg["From"] = "teamexplorex19@gmail.com"
         msg["To"] = receiver_email
         msg.set_content("Thank you for registering. Your token PDF is attached.")
 
@@ -2040,7 +2043,7 @@ def send_email_with_pdf(receiver_email, pdf_path):
         msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
 
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login("@gmail.com", "")
+        server.login("teamexplorex19@gmail.com", "qhsz wloa bfqw xdiq")
         server.send_message(msg)
         server.quit()
 

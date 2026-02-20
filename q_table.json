@@ -1,9 +1,1 @@
-<<<<<<< HEAD
-{"low": {"increase_fairness": 925.9984433752521, "increase_wait": 918.9510784679675, "balance": 922.6214900778176}}
-=======
-<<<<<<< HEAD
-{"low": {"increase_fairness": 870.3102010701933, "increase_wait": 686.8459913258841, "balance": 677.6864499232004}, "high": {"increase_fairness": 278.2390648756889, "increase_wait": 69.22032147903847, "balance": 91.45953344961184}}
-=======
-{"low": {"increase_fairness": 10.7156608, "increase_wait": 0, "balance": 18.08512}}
->>>>>>> a5f643d53f90d9218bcd95649ed990ef5c108f34
->>>>>>> ad9bfcba40e698eae618d58902d8b938cda0b472
+{"low": {"increase_fairness": 542.7350944629833, "increase_wait": 55.19714855101759, "balance": 121.80768984078166}}
