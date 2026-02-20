@@ -503,7 +503,7 @@ def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="sudeep@29",
+        password="kaibalya123",
         database="hospital_db"
     )
 
@@ -1792,13 +1792,34 @@ def live_status(patient_id):
 # ========================
 # Download Token PDF
 # ========================
+
+# ========================
+# Download Token PDF
+# ========================
+
 @app.route("/download/<int:patient_id>")
 def download_token(patient_id):
+
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table,
+        TableStyle, Image
+    )
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.lib.pagesizes import A4
+    from reportlab.graphics.barcode import qr
+    from reportlab.graphics.shapes import Drawing
 
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM patients WHERE id=%s", (patient_id,))
+    cursor.execute("""
+        SELECT p.*, d.name AS doctor_name
+        FROM patients p
+        LEFT JOIN doctors d ON p.doctor_id = d.id
+        WHERE p.id=%s
+    """, (patient_id,))
     patient = cursor.fetchone()
 
     cursor.close()
@@ -1807,7 +1828,6 @@ def download_token(patient_id):
     if not patient:
         return "Patient not found"
 
-    # Ensure static folder exists
     if not os.path.exists("static"):
         os.makedirs("static")
 
@@ -1816,25 +1836,177 @@ def download_token(patient_id):
 
     doc = SimpleDocTemplate(filepath, pagesize=A4)
     elements = []
-
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("<b>Hospital Smart Queue System</b>", styles['Title']))
-    elements.append(Spacer(1, 0.5 * inch))
+    # =========================
+    # PAGE BORDER
+    # =========================
+    def add_page_border(canvas, doc):
+        canvas.saveState()
+        width, height = A4
+        canvas.setStrokeColor(colors.HexColor("#0B3C5D"))
+        canvas.setLineWidth(2)
+        canvas.rect(25, 25, width - 50, height - 50)
+        canvas.restoreState()
 
-    data = [
-        ["Token ID:", patient["id"]],
-        ["Name:", patient["name"]],
-        ["Department:", patient["department"]],
-        ["Priority:", patient["priority"]],
-        ["Status:", patient["status"]]
+    # =========================
+    # HEADER SECTION
+    # =========================
+    logo_path = "static/logo.png"
+
+    hospital_style = ParagraphStyle(
+        'HospitalStyle',
+        parent=styles['Title'],
+        fontSize=20,
+        textColor=colors.HexColor("#0B3C5D")
+    )
+
+    hospital_name = Paragraph(
+        "<b>ExploreX Care</b><br/>Advanced AI Queue System",
+        hospital_style
+    )
+
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=110, height=110)
+        header_table = Table([[logo, hospital_name]], colWidths=[120, 330])
+    else:
+        header_table = Table([[hospital_name]], colWidths=[450])
+
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+
+    elements.append(header_table)
+    elements.append(Spacer(1, 15))
+
+    divider = Table([[""]], colWidths=[450], rowHeights=[3])
+    divider.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#0B3C5D"))
+    ]))
+    elements.append(divider)
+    elements.append(Spacer(1, 25))
+
+    # =========================
+    # BIG TOKEN NUMBER
+    # =========================
+    token_style = ParagraphStyle(
+        'TokenStyle',
+        parent=styles['Normal'],
+        fontSize=32,
+        alignment=1,
+        textColor=colors.HexColor("#0B3C5D")
+    )
+
+    elements.append(Paragraph(f"<b>TOKEN NO: {patient['id']}</b>", token_style))
+    elements.append(Spacer(1, 25))
+
+    # =========================
+    # PRIORITY BADGE
+    # =========================
+    if patient["priority"] == "HIGH":
+        badge_color = colors.red
+    elif patient["priority"] == "MEDIUM":
+        badge_color = colors.orange
+    else:
+        badge_color = colors.green
+
+    priority_table = Table(
+        [[f"PRIORITY: {patient['priority']}"]],
+        colWidths=[200]
+    )
+
+    priority_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), badge_color),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTSIZE', (0, 0), (-1, -1), 14),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+
+    elements.append(priority_table)
+    elements.append(Spacer(1, 25))
+
+    # =========================
+    # PREDICT WAIT TIME
+    # =========================
+    predicted_time, _ = predict_duration(
+        patient["age"],
+        patient["oxygen"],
+        patient["bp"],
+        patient["temperature"],
+        patient["department"],
+        patient["priority"],
+        patient["disease"]
+    )
+
+    details_data = [
+        ["Patient Name", patient["name"]],
+        ["Department", patient["department"]],
+        ["Doctor", patient.get("doctor_name", "Not Assigned")],
+        ["Estimated Consultation Time", f"{predicted_time} mins"],
+        ["Generated At", datetime.now().strftime("%d-%m-%Y %H:%M")]
     ]
+    details_table = Table(details_data, colWidths=[200, 250])
+    details_table.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor("#EAF2F8")),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWHEIGHT', (0, 0), (-1, -1), 25),
+    ]))
 
-    table = Table(data, colWidths=[150, 250])
-    elements.append(table)
+    elements.append(details_table)
+    elements.append(Spacer(1, 30))
 
-    doc.build(elements)
-    send_email_with_pdf(patient["email"], filepath)
+    # =========================
+    # QR CODE
+    # =========================
+    qr_code = qr.QrCodeWidget(str(patient["id"]))
+    bounds = qr_code.getBounds()
+    size = 100
+    width = bounds[2] - bounds[0]
+    height = bounds[3] - bounds[1]
+
+    drawing = Drawing(
+        size, size,
+        transform=[size/width, 0, 0, size/height, 0, 0]
+    )
+    drawing.add(qr_code)
+
+    elements.append(drawing)
+    elements.append(Spacer(1, 20))
+
+    # =========================
+    # FOOTER
+    # =========================
+    footer_style = ParagraphStyle(
+        'FooterStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=1,
+        textColor=colors.grey
+    )
+
+    elements.append(Paragraph(
+        "Please monitor the digital display for your token number.",
+        footer_style
+    ))
+    elements.append(Spacer(1, 5))
+    elements.append(Paragraph(
+        "This token is system generated. No signature required.",
+        footer_style
+    ))
+
+    # Build PDF with border
+    doc.build(elements, onFirstPage=add_page_border)
+
+    # Send Email (if function exists)
+    try:
+        send_email_with_pdf(patient["email"], filepath)
+    except Exception as e:
+        print("Email sending failed:", e)
+
     return send_file(filepath, as_attachment=True)
 
 @app.route("/simulate")
@@ -1869,7 +2041,7 @@ def send_email_with_pdf(receiver_email, pdf_path):
     try:
         msg = EmailMessage()
         msg["Subject"] = "Smart Hospital AI - Token Details"
-        msg["From"] = "@gmail.com"
+        msg["From"] = "teamexplorex19@gmail.com"
         msg["To"] = receiver_email
         msg.set_content("Thank you for registering. Your token PDF is attached.")
 
@@ -1880,7 +2052,7 @@ def send_email_with_pdf(receiver_email, pdf_path):
         msg.add_attachment(file_data, maintype="application", subtype="pdf", filename=file_name)
 
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login("@gmail.com", "")
+        server.login("teamexplorex19@gmail.com", "qhsz wloa bfqw xdiq")
         server.send_message(msg)
         server.quit()
 
