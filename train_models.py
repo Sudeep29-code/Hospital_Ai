@@ -17,7 +17,7 @@ try:
     conn = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="kaibalya123",
+        password="sudeep@29",
         database="hospital_db"
     )
 except Exception as e:
