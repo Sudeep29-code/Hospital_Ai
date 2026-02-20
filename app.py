@@ -133,24 +133,32 @@ def admin_dashboard():
 
     # Doctor Management Data
     cursor.execute("""
-        SELECT 
+            SELECT 
             d.id,
             d.name,
             d.department,
             d.available_from,
             d.available_to,
             d.is_active,
-            COUNT(p.id) AS current_load,
-            SUM(CASE 
-                WHEN p.status = 'Completed'
-                AND DATE(p.completed_at) = CURDATE()
-                THEN 1 ELSE 0 
-            END) AS today_completed
+
+            -- Current workload
+            (
+                SELECT COUNT(*) 
+                FROM patients p1
+                WHERE p1.doctor_id = d.id
+                AND p1.status IN ('waiting','emergency')
+            ) AS current_load,
+
+            -- Completed today
+            (
+                SELECT COUNT(*)
+                FROM patients p2
+                WHERE p2.doctor_id = d.id
+                AND p2.status = 'completed'
+                AND DATE(p2.completed_at) = CURDATE()
+            ) AS today_completed
+
         FROM doctors d
-        LEFT JOIN patients p 
-            ON p.doctor_id = d.id
-            AND p.status IN ('waiting','emergency')
-        GROUP BY d.id
     """)
     
     doctors = cursor.fetchall()
@@ -495,7 +503,7 @@ def get_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="aditya@123",
+        password="sudeep@29",
         database="hospital_db"
     )
 
@@ -1519,7 +1527,8 @@ def complete_patient(patient_id):
     cursor.execute("""
         UPDATE patients
         SET status='completed',
-            consultation_duration=%s
+            consultation_duration=%s,
+            completed_at=NOW()
         WHERE id=%s
     """, (consultation_time, patient_id))
 
