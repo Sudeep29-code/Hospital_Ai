@@ -7,45 +7,50 @@
 <body>
 <!-- Aditya -->
 <header class="navbar">
-    <div class="logo">🏥 Smart Hospital AI</div>
+    <div class="logo"><img src="static/logo.png" alt="Smart Hospital Logo"></div>
     <div class="nav-buttons">
+        <a href="#" class="nav-link">Home</a>
         <a href="/register" class="nav-link">Register</a>
         <a href="/doctor_login" class="nav-link">Doctor Login</a>
+        <a href="#"class="nav-link">Contact Us</a>
         <a href="{{ url_for('admin_login') }}" class="nav-link">Admin Login</a>
     </div>
 </header>
 
 <section class="hero">
-    <h1>Smart AI Queue Management</h1>
-    <p>Real-Time AI Powered Patient Flow Optimization</p>
-    <div class="hero-buttons">
-        <a href="/register" class="btn-primary">Register Now</a>
-        <a href="/login" class="btn-outline">Check Queue Status</a>
-    </div>
-</section>
-<section class="stats">
+    <div class="hero-container">
 
-    <div class="stat">
-        <div class="circle" data-target="10000" data-suffix="+" style="--percentage: 100;">
-            <span class="counter">0</span>
+        <!-- LEFT SIDE -->
+        <div class="hero-left">
+            <h1>
+                Smart AI Queue <br>
+                Management System
+            </h1>
+
+            <p>
+                Real-time AI powered patient flow optimization to reduce
+                waiting time and improve hospital efficiency.
+            </p>
+
+            <div class="hero-buttons">
+                <a href="/register" class="btn-primary">Register</a>
+                <a href="/login" class="btn-secondary">Check Queue</a>
+            </div>
+
+            <div class="hero-stats">
+                <div><strong>10K+</strong><span>Patients</span></div>
+                <div><strong>50+</strong><span>Doctors</span></div>
+                <div><strong>95%</strong><span>Efficiency</span></div>
+            </div>
         </div>
-        <p>Patients Managed</p>
-    </div>
 
-    <div class="stat">
-        <div class="circle" data-target="50" data-suffix="+" style="--percentage: 50;">
-            <span class="counter">0</span>
-        </div>
-        <p>Doctors Connected</p>
-    </div>
+        <!-- RIGHT SIDE -->
+        <div class="hero-right">
+                <img src="{{ url_for('static', filename='doctor-team.png')}}" alt="Doctors">
+            </div>
+        <div>
 
-    <div class="stat">
-        <div class="circle" data-target="95" data-suffix="%" style="--percentage: 95;">
-            <span class="counter">0</span>
-        </div>
-        <p>Reduced Waiting Time</p>
     </div>
-
 </section>
 
 
