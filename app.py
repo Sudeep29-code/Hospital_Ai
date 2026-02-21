@@ -339,13 +339,11 @@ def delete_doctor(doctor_id):
 
 
 
-@app.route("/admin/force-optimize")
+@app.route("/admin/force-optimize", methods=['POST'])  # <-- change here
 @admin_required
 def force_optimize():
-
-    run_global_optimization()   # your main optimization function
-
-    return redirect(url_for("admin_dashboard", optimized="1"))
+    run_global_optimization()
+    return {"status": "success"}   # <-- change from redirect to JSON
 
 
 @app.route("/admin/assignment-explanations")

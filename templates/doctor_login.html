@@ -1,105 +1,515 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Doctor Login</title>
+    <title>Doctor Login – ExploreX Care</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
+        /* ── Reset ── */
+        *, *::before, *::after {
+            margin: 0; padding: 0;
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+        }
+
+        :root {
+            --teal:        #00bbcc;
+            --teal-dark:   #009aab;
+            --teal-deeper: #007a88;
+            --teal-soft:   rgba(0, 187, 204, 0.10);
+            --teal-glow:   rgba(0, 187, 204, 0.30);
+            --teal-border: rgba(0, 187, 204, 0.25);
+            --blue:        #1976d2;
+            --blue-dark:   #125ea5;
+            --blue-soft:   rgba(25, 118, 210, 0.10);
+            --blue-glow:   rgba(25, 118, 210, 0.28);
+            --white:       #ffffff;
+            --text:        #1a2a3a;
+            --text-sub:    #4a5568;
+            --text-muted:  #94a3b8;
+            --border:      #e2e8f0;
         }
 
         body {
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
             height: 100vh;
+            overflow: hidden;
         }
 
+        /* ── Full-screen background ── */
         .main-section {
             height: 100vh;
             width: 100%;
-            background-image: url("{{ url_for('static', filename='doc_login.png') }}");
+            background-color: #001c1f;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Subtle dark overlay for readability */
+        .main-section::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                120deg,
+                rgba(0, 15, 40, 0.55) 0%,
+                rgba(0, 80, 120, 0.25) 60%,
+                transparent 100%
+            );
+            z-index: 0;
+        }
+
+        /* ── Side branding panel ── */
+        .brand-panel {
+            position: relative;
+            z-index: 1;
+            padding: 0 0 0 8%;
+            flex: 1;
+            max-width: 520px;
+            animation: slideInLeft 0.7s ease both;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--teal);
+            background: rgba(0, 187, 204, 0.14);
+            border: 1px solid var(--teal-border);
+            padding: 5px 14px;
+            border-radius: 99px;
+            margin-bottom: 22px;
+        }
+
+        .brand-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--teal);
+            box-shadow: 0 0 8px var(--teal-glow);
+            animation: pulse 2s infinite;
+        }
+
+        .brand-panel h1 {
+            font-size: 42px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.15;
+            letter-spacing: -0.8px;
+            margin-bottom: 16px;
+        }
+
+        .brand-panel h1 span {
+            color: var(--teal);
+        }
+
+        .brand-panel p {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.75;
+            max-width: 360px;
+            margin-bottom: 32px;
+        }
+
+        .brand-stats {
+            display: flex;
+            gap: 32px;
+        }
+
+        .brand-stat strong {
+            display: block;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--teal);
+        }
+
+        .brand-stat span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.55);
+        }
+
+        /* ── Login card ── */
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            padding: 0 8% 0 0;
+            display: flex;
+            justify-content: flex-end;
+            flex: 1;
+            animation: slideInRight 0.7s ease both;
         }
 
         .login-container {
-            position: absolute;
-            top: 50%;
-            left: 13%;   /* 🔥 Adjust this value slightly */
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            width: 350px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 44px 40px;
+            width: 380px;
+            border-radius: 24px;
+            box-shadow:
+                0 24px 60px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(255, 255, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
 
-        h2 {
+        /* Teal top accent bar */
+        .login-container::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--teal), #00e5c8);
+        }
+
+        /* Soft circle decoration */
+        .login-container::after {
+            content: "";
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            opacity: 0.06;
+        }
+
+        /* ── Card header ── */
+        .login-header {
             text-align: center;
-            margin-bottom: 25px;
-            color: #1976d2;
+            margin-bottom: 30px;
+        }
+
+        .login-icon {
+            width: 54px; height: 54px;
+            margin: 0 auto 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 8px 22px var(--teal-glow);
+        }
+
+        .login-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.4px;
+            margin-bottom: 4px;
+        }
+
+        .login-header p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ── Form fields ── */
+        .field-group {
+            margin-bottom: 18px;
         }
 
         label {
             display: block;
-            margin-bottom: 6px;
-            font-weight: bold;
+            margin-bottom: 7px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 15px;
+            color: var(--text-muted);
+            pointer-events: none;
+            transition: color 0.25s;
         }
 
         input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+            padding: 12px 14px 12px 40px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text);
+            background: #f8fafc;
+            transition: all 0.25s ease;
+            outline: none;
         }
 
-        button {
+        input::placeholder { color: #c0c8d8; }
+
+        input:hover { border-color: #b0c4d8; }
+
+        input:focus {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px var(--teal-soft);
+            background: var(--white);
+        }
+
+        input:focus + .input-icon,
+        .input-wrap:focus-within .input-icon {
+            color: var(--teal-dark);
+        }
+
+        /* ── Forgot password ── */
+        .forgot-row {
+            text-align: right;
+            margin-top: -10px;
+            margin-bottom: 18px;
+        }
+
+        .forgot-row a {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--teal-dark);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .forgot-row a:hover { color: var(--teal); }
+
+        /* ── Submit button ── */
+        button[type="submit"] {
             width: 100%;
-            padding: 12px;
-            background-color: #1976d2;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-weight: bold;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 20px var(--teal-glow);
+            letter-spacing: 0.02em;
         }
 
-        button:hover {
-            background-color: #125ea5;
+        /* Shine sweep */
+        button[type="submit"]::before {
+            content: "";
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+            transition: 0.55s;
+        }
+
+        button[type="submit"]:hover::before { left: 100%; }
+
+        button[type="submit"]:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px var(--teal-glow);
+        }
+
+        button[type="submit"]:active {
+            transform: translateY(0);
+        }
+
+        /* ── Divider ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 11.5px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Footer link ── */
+        .login-footer {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .login-footer a {
+            color: var(--teal-dark);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .login-footer a:hover { color: var(--teal); }
+
+        /* ── Flash message ── */
+        .flash {
+            padding: 11px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flash-error {
+            background: rgba(255, 77, 77, 0.08);
+            color: #c0392b;
+            border: 1px solid rgba(255, 77, 77, 0.2);
+        }
+
+        .flash-success {
+            background: rgba(16, 185, 129, 0.08);
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* ── Animations ── */
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.4; }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .brand-panel { display: none; }
+            .main-section { justify-content: center; }
+            .main-section::before {
+                background: rgba(0, 10, 30, 0.50);
+            }
+            .login-wrapper {
+                padding: 0 20px;
+                justify-content: center;
+                width: 100%;
+            }
+            .login-container { width: 100%; max-width: 400px; }
+        }
+
+        @media (max-width: 480px) {
+            .login-container { padding: 36px 24px; border-radius: 18px; }
+            .login-header h2 { font-size: 20px; }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="main-section">
+<div class="main-section">
 
-        <div class="login-container">
-            <h2>Doctor Login</h2>
-
-            <form method="POST">
-                <label>Doctor ID</label>
-                <input type="text" name="doctor_id" placeholder="Enter ID" required>
-
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Enter password" required>
-
-                <p style="margin-top:15px; text-align:center;">
-                    <a href="{{ url_for('doctor_forgot_password') }}" style="color:#007bff; text-decoration:none;">
-                        Forgot Password?
-                    </a>
-                </p>
-
-                <button type="submit">Login</button>
-            </form>
+    <!-- Left branding panel -->
+    <div class="brand-panel">
+        <div class="brand-badge">
+            <span class="brand-dot"></span>
+            ExploreX · AI Healthcare
         </div>
-
+        <h1>Smart<br>Care Starts<br>with <span>You</span></h1>
+        <p>Log in to access your patient dashboard, AI-assisted scheduling, and real-time workload insights.</p>
+        <div class="brand-stats">
+            <div class="brand-stat">
+                <strong>2,400+</strong>
+                <span>Patients Managed</span>
+            </div>
+            <div class="brand-stat">
+                <strong>98%</strong>
+                <span>Assignment Accuracy</span>
+            </div>
+            <div class="brand-stat">
+                <strong>Live</strong>
+                <span>RL Optimization</span>
+            </div>
+        </div>
     </div>
 
-</body>
+    <!-- Right login card -->
+    <div class="login-wrapper">
+        <div class="login-container">
 
+            <!-- Header -->
+            <div class="login-header">
+                <div class="login-icon">🩺</div>
+                <h2>Doctor Login</h2>
+                <p>ExploreX · Secure Access Portal</p>
+            </div>
+
+            <!-- Optional flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">
+                            {{ '⚠️' if category == 'error' else '✅' }} {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Form -->
+            <form method="POST">
+
+                <div class="field-group">
+                    <label>Doctor ID</label>
+                    <div class="input-wrap">
+                        <input type="text" name="doctor_id" placeholder="Enter your doctor ID" required>
+                        <span class="input-icon">🪪</span>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label>Password</label>
+                    <div class="input-wrap">
+                        <input type="password" name="password" placeholder="Enter your password" required>
+                        <span class="input-icon">🔒</span>
+                    </div>
+                </div>
+
+                <div class="forgot-row">
+                    <a href="{{ url_for('doctor_forgot_password') }}">Forgot Password?</a>
+                </div>
+
+                <button type="submit">Login →</button>
+
+            </form>
+
+            <div class="divider">or</div>
+
+            <div class="login-footer">
+                Not a doctor? <a href="/">Return to Home</a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
 </html>

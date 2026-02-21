@@ -1,315 +1,723 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Doctor Dashboard</title>
+    <title>Doctor Dashboard – HAIOP</title>
     <meta http-equiv="refresh" content="15">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
     <style>
-        /* Base Layout */
+        /* ── Variables (HAIOP theme) ── */
+        :root {
+            --teal:        #00bbcc;
+            --teal-dark:   #009aab;
+            --teal-deeper: #007a88;
+            --teal-soft:   rgba(0, 187, 204, 0.10);
+            --teal-glow:   rgba(0, 187, 204, 0.28);
+            --teal-border: rgba(0, 187, 204, 0.22);
+
+            --blue:        #0077cc;
+            --blue-soft:   rgba(0, 119, 204, 0.10);
+
+            --coral:       #ff4d6a;
+            --coral-soft:  rgba(255, 77, 106, 0.10);
+            --coral-glow:  rgba(255, 77, 106, 0.28);
+            --coral-border:rgba(255, 77, 106, 0.22);
+
+            --amber:       #f59e0b;
+            --amber-soft:  rgba(245, 158, 11, 0.10);
+
+            --emerald:     #10b981;
+            --emerald-soft:rgba(16, 185, 129, 0.10);
+            --emerald-glow:rgba(16, 185, 129, 0.25);
+
+            --bg:          #f0fbfc;
+            --bg-wash:     #e6f8fa;
+            --white:       #ffffff;
+            --text:        #071e22;
+            --text-sub:    #1a3d42;
+            --text-muted:  #7a9fa5;
+            --border:      #d4eef1;
+
+            --shadow-xs:   0 2px 8px rgba(0, 100, 110, 0.06);
+            --shadow-sm:   0 4px 18px rgba(0, 100, 110, 0.09);
+            --shadow-md:   0 10px 32px rgba(0, 100, 110, 0.12);
+            --shadow-teal: 0 8px 26px var(--teal-glow);
+
+            --radius:      14px;
+            --radius-lg:   20px;
+            --radius-pill: 99px;
+            --sidebar-w:   268px;
+            --topbar-h:    70px;
+        }
+
+        /* ── Reset ── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ── Body / Layout ── */
         body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #f5f6f8;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .doctor-dashboard {
-            min-height: 100vh;
+        /* Teal mesh */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 65% 50% at 85% 5%,  rgba(0,187,204,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 5%  85%,  rgba(0,229,200,0.06) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            height: var(--topbar-h);
+            background: rgba(255,255,255,0.82);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 30px 0;
+            justify-content: space-between;
+            box-shadow: var(--shadow-xs);
         }
 
-        /* Header */
-        .dashboard-header {
-            width: 80%;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .dashboard-header h1 {
-            margin: 0;
-            font-size: 26px;
-            color: #2c3e50;
-        }
-
-        .dashboard-header p {
-            margin-top: 5px;
-            color: #555;
-        }
-
-        /* Card */
-        .card {
-            background: #ffffff;
-            width: 80%;
-            margin: 15px 0;
-            padding: 25px;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-        }
-
-        /* Section Titles */
-        .card h2 {
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #e5e5e5;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        tr:hover {
-            background-color: #f9f9f9;
-        }
-
-        /* Regular Button */
-        button,
-        .complete-btn {
-            padding: 6px 14px;
-            border-radius: 4px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            font-size: 13px;
-            cursor: pointer;
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             text-decoration: none;
-            display: inline-block;
         }
 
-        button:hover,
-        .complete-btn:hover {
-            opacity: 0.9;
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            box-shadow: 0 4px 14px var(--teal-glow);
         }
 
-        /* Emergency Section Styling */
-        .card:nth-of-type(4) h2 {
-            color: #dc3545;
+        .brand-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.4px;
         }
 
-        /* Emergency Section Styling */
-        .emergency-card h2 {
-            color: #dc3545;
+        .brand-name em {
+            font-style: normal;
+            color: var(--teal);
         }
 
-        .emergency-card th {
-            background-color: #dc3545;
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .emergency-card .complete-btn,
-        .emergency-card button {
-            background-color: #dc3545;
+        .topbar-doctor {
+            display: flex;
+            align-items: center;
+            gap: 9px;
         }
 
-
-
-        /* Badge */
-        .badge-green {
-            display: inline-block;
-            padding: 4px 10px;
-            background-color: #28a745;
-            color: white;
-            border-radius: 4px;
+        .doctor-avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 12px;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 3px 10px var(--teal-glow);
+            position: relative;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-
-            .card,
-            .dashboard-header {
-                width: 95%;
-            }
+        .doctor-avatar::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 9px; height: 9px;
+            background: var(--emerald);
+            border-radius: 50%;
+            border: 2px solid #fff;
         }
 
-        table {
-            width: 100%;
-            table-layout: fixed;
-        }
-
-        th,
-        td {
-            width: 33.33%;
-        }
-
-        .emergency-card {
-            font-weight: bold;
-        }
-
-        .emergency-card th,
-        .emergency-card td {
-            font-weight: bold;
-        }
-
-        .emergency-card,
-        .emergency-card * {
-            font-weight: 900 !important;
-        }
-
-        /* Priority Badges */
-        .priority-high {
-            background-color: #dc3545;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+        .doctor-info .name {
+            font-size: 13px;
             font-weight: 700;
+            color: var(--text);
         }
 
-        .priority-medium {
-            background-color: #ffc107;
-            color: black;
+        .doctor-info .dept {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .refresh-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--teal-deeper);
+            background: var(--teal-soft);
+            border: 1px solid var(--teal-border);
             padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
+            border-radius: var(--radius-pill);
         }
 
-        .priority-low {
-            background-color: #28a745;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
+        .refresh-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--teal);
+            animation: pulse-dot 2s infinite;
         }
 
-        /* Priority Badges */
-        .priority-high {
-            background-color: #dc3545;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
+        /* ── Main layout ── */
+        .page-wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 36px 32px 60px;
         }
 
-        .priority-medium {
-            background-color: #ffc107;
-            color: black;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
+        /* ── Page header ── */
+        .page-header {
+            margin-bottom: 32px;
+            animation: fadeUp 0.4s ease both;
         }
 
-        .priority-low {
-            background-color: #28a745;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
+        .breadcrumb {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
         }
 
-        /* Utilization Progress Bar */
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.5px;
+        }
+
+        .page-header .sub {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ── KPI grid ── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px 22px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--teal), #00e5c8);
+        }
+
+        .kpi-card:nth-child(2)::before { background: linear-gradient(90deg, var(--blue), #00bbcc); }
+        .kpi-card:nth-child(3)::before { background: linear-gradient(90deg, var(--emerald), #00bbcc); }
+        .kpi-card:nth-child(4)::before { background: linear-gradient(90deg, var(--amber), #f97316); }
+
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: -20px; right: -20px;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            opacity: 0.055;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: var(--shadow-teal);
+            border-color: var(--teal-border);
+        }
+
+        .kpi-card h4 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -1px;
+        }
+
+        .kpi-sub {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .kpi-card:nth-child(1) { animation-delay: 0.05s; }
+        .kpi-card:nth-child(2) { animation-delay: 0.10s; }
+        .kpi-card:nth-child(3) { animation-delay: 0.15s; }
+        .kpi-card:nth-child(4) { animation-delay: 0.20s; }
+
+        /* ── Progress bar ── */
         .progress-bar {
             width: 100%;
-            height: 10px;
-            background: #e0e0e0;
-            border-radius: 6px;
-            margin-top: 6px;
+            height: 7px;
+            background: var(--bg-wash);
+            border-radius: var(--radius-pill);
+            margin-top: 10px;
             overflow: hidden;
+            border: 1px solid var(--border);
         }
 
         .progress-fill {
             height: 100%;
-            background: #007bff;
-            border-radius: 6px;
-            transition: width 0.5s ease-in-out;
+            border-radius: var(--radius-pill);
+            background: linear-gradient(90deg, var(--teal), #00e5c8);
+            transition: width 0.8s ease;
         }
 
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-            }
-
-            70% {
-                box-shadow: 0 0 0 12px rgba(220, 53, 69, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
+        /* ── Section cards ── */
+        .section-card {
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 24px;
+            animation: fadeUp 0.5s ease both;
         }
 
-        .emergency-card h2::before {
+        .section-card:nth-of-type(2) { animation-delay: 0.10s; }
+        .section-card:nth-of-type(3) { animation-delay: 0.15s; }
+
+        .card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-top h2 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .count-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            background: var(--teal-soft);
+            color: var(--teal-deeper);
+            border: 1px solid var(--teal-border);
+        }
+
+        /* ── AI Status inside card ── */
+        .ai-status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 22px 24px;
+        }
+
+        .ai-metric {
+            background: var(--bg-wash);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            transition: border-color 0.2s;
+        }
+
+        .ai-metric:hover { border-color: var(--teal-border); }
+
+        .ai-metric-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.10em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .ai-metric-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .system-badge {
+            padding: 5px 14px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1.5px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-green {
+            background: var(--emerald-soft);
+            color: var(--emerald);
+            border-color: rgba(16, 185, 129, 0.22);
+        }
+
+        .badge-amber {
+            background: var(--amber-soft);
+            color: var(--amber);
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .badge-red {
+            background: var(--coral-soft);
+            color: var(--coral);
+            border-color: var(--coral-border);
+        }
+
+        /* ── Table ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+
+        thead { background: #eef8fa; }
+
+        th {
+            padding: 12px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+            color: var(--text-muted);
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 18px;
+            font-size: 13.5px;
+            color: var(--text-sub);
+            border-top: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tbody tr { transition: background 0.15s ease; }
+
+        tbody tr:hover td {
+            background: linear-gradient(90deg, rgba(0,187,204,0.04), transparent);
+        }
+
+        /* ── Patient name cell ── */
+        .patient-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .patient-avatar {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px var(--teal-glow);
+        }
+
+        .patient-name { font-weight: 600; color: var(--text); }
+
+        /* ── Priority badges ── */
+        .priority-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1.5px solid transparent;
+        }
+
+        .priority-high {
+            background: var(--coral-soft);
+            color: var(--coral);
+            border-color: var(--coral-border);
+        }
+
+        .priority-medium {
+            background: var(--amber-soft);
+            color: var(--amber);
+            border-color: rgba(245,158,11,0.25);
+        }
+
+        .priority-low {
+            background: var(--emerald-soft);
+            color: var(--emerald);
+            border-color: rgba(16,185,129,0.22);
+        }
+
+        /* ── Complete button ── */
+        .complete-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            color: #fff;
+            box-shadow: 0 3px 10px var(--teal-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .complete-btn::before {
             content: "";
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.32), transparent);
+            transition: 0.45s;
+        }
+
+        .complete-btn:hover::before { left: 100%; }
+
+        .complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--teal-glow);
+        }
+
+        /* ── Emergency card overrides ── */
+        .emergency-card {
+            border-color: var(--coral-border) !important;
+        }
+
+        .emergency-card .card-top {
+            background: rgba(255, 77, 106, 0.03);
+            border-bottom-color: var(--coral-border);
+        }
+
+        .emergency-card .card-top h2 { color: var(--coral); }
+
+        .emergency-card .count-pill {
+            background: var(--coral-soft);
+            color: var(--coral);
+            border-color: var(--coral-border);
+        }
+
+        .emergency-card thead { background: rgba(255, 77, 106, 0.05); }
+
+        .emergency-card tbody tr:hover td {
+            background: linear-gradient(90deg, rgba(255,77,106,0.04), transparent);
+        }
+
+        .emergency-card .complete-btn {
+            background: linear-gradient(135deg, var(--coral), #ff9a5c);
+            box-shadow: 0 3px 10px var(--coral-glow);
+        }
+
+        .emergency-card .complete-btn:hover {
+            box-shadow: 0 8px 22px var(--coral-glow);
+        }
+
+        .emergency-card .patient-avatar {
+            background: linear-gradient(135deg, var(--coral), #ff9a5c);
+            box-shadow: 0 2px 8px var(--coral-glow);
+        }
+
+        /* Pulsing dot on emergency title */
+        .emergency-dot {
             display: inline-block;
-            width: 10px;
-            height: 10px;
-            background-color: #dc3545;
+            width: 8px; height: 8px;
             border-radius: 50%;
-            margin-right: 10px;
-            animation: pulse 1.5s infinite;
+            background: var(--coral);
+            box-shadow: 0 0 6px var(--coral-glow);
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.45; transform: scale(0.8); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .page-wrap { padding: 24px 16px 40px; }
+            .topbar { padding: 0 20px; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .ai-status-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .topbar-right .refresh-badge { display: none; }
+            th, td { padding: 10px 12px; }
         }
     </style>
-
-
 </head>
 
 <body>
 
-    <div class="doctor-dashboard">
-
-        <div class="dashboard-header">
-            <h1>Welcome Dr. {{ doctor_name }}</h1>
-            <p>Department: {{ department }}</p>
-        </div>
-
-        <div class="card">
-            <h2>📊 Doctor Analytics</h2>
-            <p>Average Consultation Time: {{ avg_time }} mins</p>
-            <p>Utilization: {{ utilization }}%</p>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: {{ utilization | default(0) | int }}%;">
-                </div>
+<!-- Topbar -->
+<header class="topbar">
+    <a href="/" class="topbar-brand">
+        <span class="brand-name">ExploreX<em>Care</em></span>
+    </a>
+    <div class="topbar-right">
+        <span class="refresh-badge"><span class="refresh-dot"></span> AUTO-REFRESH 15s</span>
+        <div class="topbar-doctor">
+            <div class="doctor-avatar">{{ doctor_name[0] if doctor_name else 'D' }}</div>
+            <div class="doctor-info">
+                <div class="name">Dr. {{ doctor_name }}</div>
+                <div class="dept">{{ department }}</div>
             </div>
-
-
         </div>
+    </div>
+</header>
 
-        <div class="card">
+<div class="page-wrap">
+
+    <!-- Page header -->
+    <div class="page-header">
+        <div class="breadcrumb">Dashboard › Doctor View</div>
+        <h1>Welcome, Dr. {{ doctor_name }} 👋</h1>
+        <p class="sub">{{ department }} · Real-time AI-assisted patient management</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <h4>Avg Consultation</h4>
+            <div class="kpi-value">{{ avg_time }}<span style="font-size:16px;font-weight:500;color:var(--text-muted)"> min</span></div>
+            <div class="kpi-sub">Per patient session</div>
+        </div>
+        <div class="kpi-card">
+            <h4>Utilization</h4>
+            <div class="kpi-value">{{ utilization }}<span style="font-size:16px;font-weight:500;color:var(--text-muted)">%</span></div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ utilization | default(0) | int }}%;"></div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <h4>Regular Queue</h4>
+            <div class="kpi-value">{{ regular_patients | length }}</div>
+            <div class="kpi-sub">Active patients</div>
+        </div>
+        <div class="kpi-card">
+            <h4>Emergency Queue</h4>
+            <div class="kpi-value" style="color:var(--coral)">{{ emergency_patients | length }}</div>
+            <div class="kpi-sub">Urgent cases</div>
+        </div>
+    </div>
+
+    <!-- AI Optimization Card -->
+    <div class="section-card" style="animation-delay:0.05s">
+        <div class="card-top">
             <h2>🤖 AI Optimization Status</h2>
-            <p>Fairness Index: {{ fairness_index }}
-            </p>
-            <p>Optimization Score: {{ optimization_score }}
-                /100</p>
             {% if system_status == "Stable" %}
-            <span class="badge badge-green">System Stable</span>
+                <span class="system-badge badge-green">✅ System Stable</span>
             {% elif system_status == "Moderate Load" %}
-            <span class="badge" style="background:#ffc107;color:black;">Moderate Load</span>
+                <span class="system-badge badge-amber">⚠️ Moderate Load</span>
             {% else %}
-            <span class="badge" style="background:#dc3545;">System Overloaded</span>
+                <span class="system-badge badge-red">🔴 System Overloaded</span>
             {% endif %}
-
         </div>
+        <div class="ai-status-grid">
+            <div class="ai-metric">
+                <div class="ai-metric-label">Fairness Index</div>
+                <div class="ai-metric-value">{{ fairness_index }}</div>
+            </div>
+            <div class="ai-metric">
+                <div class="ai-metric-label">Optimization Score</div>
+                <div class="ai-metric-value">{{ optimization_score }}<span style="font-size:14px;color:var(--text-muted)">/100</span></div>
+            </div>
+        </div>
+    </div>
 
-        <div class="card">
-            <h2> 🟢 Regular Queue ({{ regular_patients|length }})</h2>
-
+    <!-- Regular Queue -->
+    <div class="section-card" style="animation-delay:0.10s">
+        <div class="card-top">
+            <h2>🟢 Regular Queue <span class="count-pill">{{ regular_patients | length }}</span></h2>
+        </div>
+        <div style="overflow-x:auto">
             <table>
                 <thead>
                     <tr>
-                        <th>Patient Name</th>
+                        <th>Patient</th>
                         <th>Priority</th>
                         <th>Action</th>
                     </tr>
@@ -317,35 +725,39 @@
                 <tbody>
                     {% for patient in regular_patients %}
                     <tr>
-                        <td>{{ patient.name }}</td>
-
                         <td>
-                            <span class="priority-{{ patient.priority|lower }}">
+                            <div class="patient-cell">
+                                <div class="patient-avatar">{{ patient.name[0] }}</div>
+                                <span class="patient-name">{{ patient.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="priority-badge priority-{{ patient.priority | lower }}">
                                 {{ patient.priority }}
                             </span>
                         </td>
-
                         <td>
                             <a href="{{ url_for('complete_patient', patient_id=patient.id) }}" class="complete-btn">
-                                Completed
+                                ✓ Completed
                             </a>
                         </td>
-
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
 
-
-        <div class="card emergency-card">
-            <h2>Emergency Queue ({{ emergency_patients|length }})</h2>
-
-
+    <!-- Emergency Queue -->
+    <div class="section-card emergency-card" style="animation-delay:0.15s">
+        <div class="card-top">
+            <h2><span class="emergency-dot"></span> Emergency Queue <span class="count-pill">{{ emergency_patients | length }}</span></h2>
+        </div>
+        <div style="overflow-x:auto">
             <table>
                 <thead>
                     <tr>
-                        <th>Patient Name</th>
+                        <th>Patient</th>
                         <th>Priority</th>
                         <th>Action</th>
                     </tr>
@@ -353,30 +765,30 @@
                 <tbody>
                     {% for patient in emergency_patients %}
                     <tr>
-                        <td>{{ patient.name }}</td>
                         <td>
-                            <span class="priority-{{ patient.priority|lower }}">
+                            <div class="patient-cell">
+                                <div class="patient-avatar">{{ patient.name[0] }}</div>
+                                <span class="patient-name">{{ patient.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="priority-badge priority-{{ patient.priority | lower }}">
                                 {{ patient.priority }}
                             </span>
                         </td>
-                        <td class="action-cell">
+                        <td>
                             <a href="{{ url_for('complete_patient', patient_id=patient.id) }}" class="complete-btn">
-                                Completed
+                                ✓ Completed
                             </a>
                         </td>
-
-
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-
         </div>
-
-
     </div>
 
+</div><!-- end page-wrap -->
+
 </body>
-
-
 </html>
