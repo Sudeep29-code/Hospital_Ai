@@ -19,27 +19,21 @@
             --grad-primary: linear-gradient(135deg, #00bbcc 0%, #00e5c8 100%);
             --grad-deep: linear-gradient(135deg, #007a88 0%, #00bbcc 100%);
             --grad-emerald: linear-gradient(135deg, #00bbcc 0%, #10b981 100%);
-
             --bg-main: #f0fbfc;
             --bg-wash: #e6f8fa;
             --card-bg: #ffffff;
-
             --text-main: #071e22;
             --text-sub: #1a3d42;
             --text-muted: #7a9fa5;
             --text-light: #b8d4d8;
-
             --border: #d4eef1;
             --border-strong: #b0dde3;
-
             --emerald: #10b981;
             --emerald-soft: rgba(16, 185, 129, 0.10);
             --emerald-glow: rgba(16, 185, 129, 0.25);
-
             --shadow-soft: 0 4px 24px rgba(0, 100, 110, 0.08);
             --shadow-hover: 0 20px 50px rgba(0, 100, 110, 0.13);
             --shadow-teal: 0 8px 28px rgba(0, 187, 204, 0.30);
-
             --radius-sm: 10px;
             --radius: 14px;
             --radius-lg: 22px;
@@ -69,9 +63,7 @@
             content: '';
             position: fixed;
             inset: 0;
-            background:
-                radial-gradient(ellipse 65% 55% at 90% 5%, rgba(0, 187, 204, 0.09) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 45% at 5% 90%, rgba(0, 229, 200, 0.07) 0%, transparent 60%);
+            background: radial-gradient(ellipse 65% 55% at 90% 5%, rgba(0, 187, 204, 0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 45% at 5% 90%, rgba(0, 229, 200, 0.07) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
         }
@@ -387,6 +379,20 @@
                     </div>
                 </div>
 
+                <!-- NEW: Contact Information -->
+                <div class="form-section-label">Contact Information</div>
+
+                <div class="form-group">
+                    <label>Email Address <span class="req">*</span></label>
+                    <input type="email" name="email" placeholder="doctor@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number (With Country Code) <span class="req">*</span></label>
+                    <input type="text" name="phone" maxlength="13" placeholder="e.g. 919876543210"
+                        oninput="allowOnlyDigits(this)" required>
+                </div>
+
                 <!-- Availability -->
                 <div class="form-section-label" style="margin-top: 6px;">Availability Hours</div>
 
@@ -432,6 +438,10 @@
         function togglePassword() {
             const input = document.getElementById('passwordInput');
             input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function allowOnlyDigits(input) {
+            input.value = input.value.replace(/\D/g, '');
         }
     </script>
 

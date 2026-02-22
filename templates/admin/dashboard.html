@@ -65,7 +65,7 @@
         <div class="kpi-card">
             <h4>Forecast (Next Hour)</h4>
             <div class="kpi-value">
-                {{ forecast_data.values() | sum }}
+                {{ forecast_data.values() | sum |round(2)}}
             </div>
         </div>
 

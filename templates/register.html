@@ -16,6 +16,7 @@
     </style>
 
     <script>
+
         function allowOnlyDigits(input, errorId) {
             input.value = input.value.replace(/\D/g, "");
             document.getElementById(errorId).style.display = "none";
@@ -32,28 +33,96 @@
             const aadhaar = document.getElementById("aadhaar").value;
             const phone = document.getElementById("phone").value;
             const whatsapp = document.getElementById("whatsapp").value;
+            const dobInput = document.getElementById("dob");
 
+            // Reset errors
+            document.getElementById("aadhaarError").style.display = "none";
+            document.getElementById("phoneError").style.display = "none";
+            document.getElementById("whatsappError").style.display = "none";
+            document.getElementById("dobError").style.display = "none";
+
+            // Aadhaar validation
             if (!/^\d{12}$/.test(aadhaar)) {
                 document.getElementById("aadhaarError").style.display = "block";
                 valid = false;
             }
 
+            // Phone validation
             if (!/^\d{10}$/.test(phone)) {
                 document.getElementById("phoneError").style.display = "block";
                 valid = false;
             }
 
+            // WhatsApp validation
             if (whatsapp && !/^\d{10}$/.test(whatsapp)) {
                 document.getElementById("whatsappError").style.display = "block";
                 valid = false;
             }
 
+            // DOB Validation (0–120 years only)
+            const dobValue = dobInput.value;
+            const today = new Date();
+            const dobDate = new Date(dobValue);
+
+            if (!dobValue) {
+                document.getElementById("dobError").innerText = "Date of Birth is required";
+                document.getElementById("dobError").style.display = "block";
+                valid = false;
+            }
+            else if (dobDate > today) {
+                document.getElementById("dobError").innerText = "Date of Birth cannot be in the future";
+                document.getElementById("dobError").style.display = "block";
+                valid = false;
+            }
+            else {
+
+                let age = today.getFullYear() - dobDate.getFullYear();
+                const monthDiff = today.getMonth() - dobDate.getMonth();
+
+                if (monthDiff < 0 ||
+                    (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+                    age--;
+                }
+
+                if (age < 0) {
+                    document.getElementById("dobError").innerText = "Invalid Date of Birth";
+                    document.getElementById("dobError").style.display = "block";
+                    valid = false;
+                }
+
+                if (age > 120) {
+                    document.getElementById("dobError").innerText = "Age cannot be more than 120 years";
+                    document.getElementById("dobError").style.display = "block";
+                    valid = false;
+                }
+            }
+
             return valid;
         }
 
-        // 🚨 Emergency Logic
         document.addEventListener("DOMContentLoaded", function () {
 
+            // ===============================
+            // DOB CALENDAR RANGE RESTRICTION
+            // ===============================
+            const dobInput = document.getElementById("dob");
+            const today = new Date();
+
+            function formatDate(date) {
+                return date.toISOString().split("T")[0];
+            }
+
+            // Max = Today (No future dates visible)
+            dobInput.setAttribute("max", formatDate(today));
+
+            // Min = 120 years ago
+            const minDate = new Date();
+            minDate.setFullYear(today.getFullYear() - 120);
+            dobInput.setAttribute("min", formatDate(minDate));
+
+            // ===============================
+            // Emergency Department Logic
+            // ===============================
             const departmentSelect = document.getElementById("departmentSelect");
             const vitalsSection = document.getElementById("vitalsSection");
             const diseaseSection = document.getElementById("diseaseSection");
@@ -67,23 +136,19 @@
 
                 if (this.value === "Emergency") {
 
-                    // Hide sections
                     vitalsSection.style.display = "none";
                     diseaseSection.style.display = "none";
 
-                    // Remove required
                     oxygen.required = false;
                     bp.required = false;
                     temperature.required = false;
                     disease.required = false;
 
-                    // Disable inputs
                     oxygen.disabled = true;
                     bp.disabled = true;
                     temperature.disabled = true;
                     disease.disabled = true;
 
-                    // Clear values
                     oxygen.value = "";
                     bp.value = "";
                     temperature.value = "";
@@ -91,25 +156,22 @@
 
                 } else {
 
-                    // Show sections
                     vitalsSection.style.display = "block";
                     diseaseSection.style.display = "block";
 
-                    // Make required
                     oxygen.required = true;
                     bp.required = true;
                     temperature.required = true;
                     disease.required = true;
 
-                    // Enable inputs
                     oxygen.disabled = false;
                     bp.disabled = false;
                     temperature.disabled = false;
                     disease.disabled = false;
                 }
             });
-
         });
+
     </script>
 </head>
 
@@ -144,7 +206,8 @@
 
             <div class="form-group">
                 <label>Date of Birth</label>
-                <input type="date" name="dob" required>
+                <input type="date" id="dob" name="dob" required>
+                <div id="dobError" class="error-msg"></div>
             </div>
 
             <div class="form-group">
@@ -199,7 +262,6 @@
                 </select>
             </div>
 
-            <!-- VITALS SECTION -->
             <div id="vitalsSection">
 
                 <div class="section-title">
@@ -223,7 +285,6 @@
 
             </div>
 
-            <!-- DISEASE SECTION -->
             <div id="diseaseSection">
                 <div class="form-group">
                     <label>Disease / Symptoms</label>

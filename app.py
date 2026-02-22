@@ -20,6 +20,10 @@ from flask import jsonify
 
 
 
+
+
+
+
 # ========================
 # RL Q-LEARNING SETTINGS
 # ========================
@@ -217,6 +221,8 @@ def add_doctor():
             name = request.form.get("name")
             department = request.form.get("department")
             password = request.form.get("password")
+            email = request.form.get("email")
+            phone = request.form.get("phone")
             available_from = request.form.get("available_from")
             available_to = request.form.get("available_to")
 
@@ -226,12 +232,12 @@ def add_doctor():
             # 1️⃣ Insert doctor first (without doctor_code)
             insert_query = """
                 INSERT INTO doctors 
-                (name, department, password, available_from, available_to)
-                VALUES (%s, %s, %s, %s, %s)
+                (name, department, password, available_from, available_to, email, phone)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
 
             cursor.execute(insert_query, 
-                (name, department, password, available_from, available_to)
+                (name, department, password, available_from, available_to, email, phone )
             )
             conn.commit()
 
@@ -276,16 +282,21 @@ def edit_doctor(doctor_id):
 
     if request.method == "POST":
         name = request.form["name"]
+        email = request.form["email"]
+        phone = request.form["phone"]
         available_from = request.form["available_from"]
         available_to = request.form["available_to"]
 
         cursor.execute("""
             UPDATE doctors
             SET name=%s,
+                email=%s,
+                phone=%s,
                 available_from=%s,
                 available_to=%s
             WHERE id=%s
-        """, (name, available_from, available_to, doctor_id))
+        """, (name, email, phone, available_from, available_to, doctor_id))
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -363,7 +374,6 @@ def force_optimize():
 @app.route("/admin/assignment-explanations")
 @admin_required
 def assignment_explanations():
-
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
 
@@ -375,15 +385,20 @@ def assignment_explanations():
         ORDER BY ae.created_at DESC
         LIMIT 20
     """)
-
     data = cursor.fetchall()
+
+    # Pre-compute necessary values
+    for a in data:
+        # Extract initials of the patient's name
+        a['initials'] = a['patient_name'][:2].upper()
+
+        # Calculate doctor load as a percentage (min 100%)
+        a['load_percent'] = min(a['doctor_load'] * 10, 100)
 
     cursor.close()
     conn.close()
 
-    return render_template("admin/assignment_explanation.html",
-        assignments=data
-    )
+    return render_template("admin/assignment_explanation.html", assignments=data)
 
 # Admin logout
 @app.route("/admin/logout")
@@ -538,6 +553,43 @@ def get_db():
         password="kaibalya123",
         database="hospital_db"
     )
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from services.database import get_db  # Assuming app.py is in Hospital_Ai folder
+
+def send_emergency_email(to_email, patient_name, department, priority, token):
+    sender_email = "teamexplorex19@gmail.com"
+    sender_password = "qhsz wloa bfqw xdiq"  # Use environment variable instead for production
+
+    subject = "🚨 EMERGENCY PATIENT ALERT"
+
+    body = f"""
+    EMERGENCY PATIENT ALERT
+
+    Patient Name: {patient_name}
+    Department: {department}
+    Priority: {priority}
+    Token Number: {token}
+
+    Immediate medical attention required.
+    """
+
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = to_email
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "plain"))
+
+    try:
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login("teamexplorex19@gmail.com","qhsz wloa bfqw xdiq")
+        server.send_message(message)
+        server.quit()
+        print("Emergency email sent successfully")
+    except Exception as e:
+        print("Error sending email:", e)
 
 # ========================
 # TIME SERIES FORECASTING
@@ -1361,7 +1413,6 @@ def run_global_optimization():
 
     cursor.close()
     conn.close()
-
 # ==============================
 # TRUE CONTINUOUS OPTIMIZER
 # ==============================
@@ -1483,8 +1534,6 @@ def doctor_dashboard():
     """, (department,))
 
     logs = cursor.fetchall()
-
-
     cursor.close()
     conn.close()
 
@@ -1499,9 +1548,6 @@ def doctor_dashboard():
         system_status = "Moderate Load"
     else:
         system_status = "Stable"
-
-    
-
 
     return render_template(
     "doctor_dashboard.jinja",
@@ -1587,9 +1633,6 @@ def complete_patient(patient_id):
     conn.close()
 
     return redirect("/doctor_dashboard")
-
-
-
 # ========================
 # Patient Register
 # ========================
@@ -1738,6 +1781,22 @@ def register():
         conn.commit()
         patient_id = cursor.lastrowid
 
+        # 🚨 SEND EMAIL IF EMERGENCY OR HIGH PRIORITY
+
+        if department == "Emergency" or priority == "HIGH":
+
+            cursor.execute("SELECT email FROM doctors WHERE id=%s", (doctor_id,))
+            doctor_data = cursor.fetchone()
+
+            if doctor_data and doctor_data[0]:
+
+                send_emergency_email(
+                    doctor_data[0],
+                    name,
+                    department,
+                    priority,
+                    patient_id
+                )
         # ========================
         # QUEUE POSITION
         # ========================
@@ -1770,9 +1829,6 @@ def register():
 
     return render_template("register.html")
 
-
-
-
 # ========================
 # Mark Emergency
 # ========================
@@ -1798,11 +1854,6 @@ def emergency_patient(patient_id):
 
     return redirect("/doctor_dashboard")
 
-
-
-# ========================
-# Live Status Page
-# ========================
 # ========================
 # Live Status Page
 # ========================
@@ -1856,93 +1907,7 @@ def live_status(patient_id):
         estimated_wait=round(estimated_wait, 2)
     )
 
-@app.route("/api/queue_status")
-def queue_status():
-    department = request.args.get("department")
-    patient_id = request.args.get("patient_id")
 
-    if not department or not patient_id:
-        return jsonify({"error": "Missing department or patient id"}), 400
-
-    try:
-        patient_id = int(patient_id)
-    except ValueError:
-        return jsonify({"error": "Invalid patient id"}), 400
-
-    conn = get_db()
-    cursor = conn.cursor(dictionary=True)
-
-    # 1️⃣ Get patient
-    cursor.execute("""
-        SELECT * FROM patients
-        WHERE id = %s AND department = %s
-    """, (patient_id, department))
-
-    patient = cursor.fetchone()
-
-    if not patient:
-        cursor.close()
-        conn.close()
-        return jsonify({"error": "Patient not found"}), 404
-
-    # 2️⃣ Get active doctor
-    cursor.execute("""
-        SELECT name
-        FROM doctors
-        WHERE department = %s AND is_active = 1
-        LIMIT 1
-    """, (department,))
-
-    doctor = cursor.fetchone()
-
-    # 3️⃣ Get ordered queue
-    cursor.execute("""
-    SELECT id, name, status, priority
-    FROM patients
-    WHERE department = %s
-      AND status IN ('emergency', 'waiting')
-    ORDER BY
-        CASE
-            WHEN status = 'emergency' THEN 0
-            WHEN priority = 'HIGH' THEN 1
-            WHEN priority = 'MEDIUM' THEN 2
-            ELSE 3
-        END,
-        created_at ASC
-""", (department,))
-
-    queue = cursor.fetchall()
-
-    queue_ids = [p["id"] for p in queue]
-
-    # 🚑 Emergency handling
-    if patient["status"] == "emergency":
-        position = 1
-        estimated_wait = 0
-    else:
-        position = queue_ids.index(patient_id) + 1 if patient_id in queue_ids else None
-        estimated_wait = (position - 1) * 5 if position else 0
-    now_serving = "Emergency Patient" if queue and queue[0]["status"] == "emergency" else (queue[0]["name"] if queue else None)
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({
-        "patient_id": patient["id"],
-        "patient_name": patient["name"],
-        "department": patient["department"],
-        "priority": patient["priority"],
-        "status": patient["status"],
-
-        "is_emergency": patient["status"] == "emergency",
-        "queue_position": position,
-        "estimated_wait": estimated_wait,
-        "now_serving": now_serving,
-        "in_queue": position is not None,
-
-        "doctor_name": doctor["name"] if doctor else "Not Assigned",
-        "doctor_active": "Yes" if doctor else "No"
-    })
 
 # ========================
 # API: Get Active Doctors by Department

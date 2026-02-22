@@ -2,156 +2,401 @@
 <html>
 <head>
     <title>Assignment Explanations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --teal:       #00d4b4;
+            --teal-dark:  #00b89a;
+            --teal-glow:  rgba(0, 212, 180, 0.18);
+            --teal-soft:  rgba(0, 212, 180, 0.08);
+            --bg:         #e8f8f5;
+            --surface:    #ffffff;
+            --surface-2:  #f3fdfb;
+            --border:     rgba(0, 212, 180, 0.2);
+            --text-1:     #0d2b25;
+            --text-2:     #4a7a70;
+            --text-3:     #8ab5ae;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            padding: 36px 40px;
+            color: var(--text-1);
         }
 
-        h2 {
-            text-align: center;
-            color: #2c3e50;
+        /* ── Page header ─────────────────────────────── */
+        .page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
-        .top-bar {
-            text-align: center;
-            margin-bottom: 20px;
+        .page-title-group h2 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-title-group p {
+            font-size: 13.5px;
+            color: var(--text-2);
+            margin-top: 5px;
+            font-weight: 400;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            padding: 5px 13px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--teal-dark);
+            white-space: nowrap;
+            align-self: flex-start;
+            margin-top: 4px;
+        }
+
+        .live-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--teal);
+            animation: blink 1.8s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%,100% { opacity:1; box-shadow: 0 0 0 0 var(--teal-glow); }
+            50%      { opacity:0.5; box-shadow: 0 0 0 5px transparent; }
+        }
+
+        /* ── Action buttons ──────────────────────────── */
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .btn {
-            background-color: #007bff;
-            color: white;
-            padding: 8px 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 600;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 5px;
+            cursor: pointer;
+            border: none;
+            transition: all .2s ease;
+            white-space: nowrap;
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        .btn-ghost {
+            background: var(--surface);
+            color: var(--text-2);
+            border: 1.5px solid var(--border);
+        }
+        .btn-ghost:hover {
+            border-color: var(--teal);
+            color: var(--teal-dark);
+            background: var(--teal-soft);
         }
 
+        .btn-primary {
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+            color: #fff;
+            box-shadow: 0 4px 16px var(--teal-glow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,212,180,0.3);
+        }
+
+        /* ── Table card ──────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,180,160,0.08);
+        }
+
+        .card-top {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--surface-2);
+        }
+
+        .card-top-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text-3);
+        }
+
+        .count-pill {
+            background: var(--teal-soft);
+            color: var(--teal-dark);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ── Table ───────────────────────────────────── */
         table {
             width: 100%;
             border-collapse: collapse;
-            background-color: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        th {
-            background-color: #34495e;
-            color: white;
-            padding: 12px;
-            text-align: center;
+        thead th {
+            background: var(--surface-2);
+            color: var(--text-3);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 13px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
         }
 
-        td {
-            padding: 10px;
-            text-align: center;
-            border-bottom: 1px solid #ddd;
+        tbody tr {
+            transition: background .15s;
+            border-bottom: 1px solid rgba(0,212,180,0.07);
+        }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: var(--teal-soft); }
+
+        tbody td {
+            padding: 14px 20px;
+            font-size: 13.5px;
+            vertical-align: middle;
         }
 
-        tr:hover {
-            background-color: #f1f1f1;
+        /* ── Cell styles ─────────────────────────────── */
+
+        /* Patient */
+        .patient-cell { display: flex; align-items: center; gap: 10px; }
+        .avatar {
+            width: 34px; height: 34px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, var(--teal), #4dd9c0);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; color: #fff;
+            flex-shrink: 0; letter-spacing: .5px;
+        }
+        .patient-name { font-weight: 600; color: var(--text-1); }
+
+        /* Doctor */
+        .doctor-name { color: var(--text-2); font-weight: 500; }
+
+        /* Duration */
+        .chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 11px; border-radius: 7px;
+            font-size: 12.5px; font-weight: 600;
+        }
+        .chip-blue { background: #eff8ff; color: #2563eb; border: 1px solid #bfdbfe; }
+
+        /* Load bar */
+        .load-wrap { display: flex; align-items: center; gap: 9px; }
+        .load-track {
+            flex: 1; height: 6px; border-radius: 3px;
+            background: rgba(0,212,180,0.12); min-width: 55px; overflow: hidden;
+        }
+        .load-fill {
+            height: 100%; border-radius: 3px;
+            background: linear-gradient(90deg, var(--teal), var(--teal-dark));
+        }
+        .load-val { font-size: 12px; font-weight: 600; color: var(--text-2); min-width: 28px; }
+
+        /* Risk */
+        .risk {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 11px; border-radius: 7px;
+            font-size: 12.5px; font-weight: 700;
+        }
+        .risk-high   { background: #fff1f0; color: #dc2626; border: 1px solid #fecaca; }
+        .risk-medium { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .risk-low    { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+        /* Strategy */
+        .strategy-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #f5f3ff; color: #7c3aed;
+            border: 1px solid #ddd6fe;
+            padding: 4px 11px; border-radius: 7px;
+            font-size: 12.5px; font-weight: 600;
         }
 
-        .cost {
-            font-weight: bold;
-            color: #27ae60;
+        /* Cost */
+        .cost-val {
+            font-size: 14px; font-weight: 700;
+            color: var(--teal-dark);
+            font-variant-numeric: tabular-nums;
         }
 
-        .strategy {
-            font-weight: bold;
-            color: #8e44ad;
+        /* Timestamp */
+        .ts {
+            font-size: 12px; color: var(--text-3); white-space: nowrap;
         }
 
-        .risk-high {
-            color: red;
-            font-weight: bold;
-        }
-
-        .risk-medium {
-            color: orange;
-            font-weight: bold;
-        }
-
-        .risk-low {
-            color: green;
-            font-weight: bold;
-        }
-
-        .footer-note {
+        /* ── Footer ──────────────────────────────────── */
+        .footer {
             margin-top: 20px;
-            font-size: 14px;
-            text-align: center;
-            color: #555;
+            display: flex; align-items: flex-start; gap: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
         }
+        .footer-icon {
+            width: 36px; height: 36px; flex-shrink: 0;
+            background: var(--teal-soft);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px;
+        }
+        .footer p { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+        .footer strong { color: var(--teal-dark); font-weight: 600; }
     </style>
 </head>
 
 <body>
 
-<h2>🔎 Why This Assignment Happened</h2>
+<!-- ── Header ── -->
+<div class="page-header">
+    <div class="page-title-group">
+        <h2>🔎 Why This Assignment Happened</h2>
+        <p>Real-time hospital intelligence · Reinforcement Learning decision log</p>
+    </div>
 
-<div class="top-bar">
-    <a href="/admin/dashboard" class="btn">⬅ Back to Dashboard</a>
-    <a href="/admin/force-optimize" class="btn">⚡ Run Optimization</a>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div class="live-badge">
+            <span class="live-dot"></span> System Stable
+        </div>
+        <div class="actions">
+            <a href="/admin/dashboard" class="btn btn-ghost">⬅ Back to Dashboard</a>
+            <a href="/admin/force-optimize" class="btn btn-primary">⚡ Run Optimization</a>
+        </div>
+    </div>
 </div>
 
-<table>
-    <tr>
-        <th>Patient</th>
-        <th>Doctor</th>
-        <th>Predicted Duration</th>
-        <th>Doctor Load</th>
-        <th>No-Show Probability</th>
-        <th>RL Strategy</th>
-        <th>Final Cost Score</th>
-        <th>Timestamp</th>
-    </tr>
+<!-- ── Table Card ── -->
+<div class="card">
+    <div class="card-top">
+        <span class="card-top-label">RL Assignment Log</span>
+        <span class="count-pill">Live Decisions</span>
+    </div>
 
-    {% for a in assignments %}
-    <tr>
-        <td>{{ a.patient_name }}</td>
-        <td>Dr. {{ a.doctor_name }}</td>
-        <td>{{ a.predicted_duration }} min</td>
-        <td>{{ a.doctor_load }}</td>
+    <table>
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Predicted Duration</th>
+                <th>Doctor Load</th>
+                <th>No-Show Probability</th>
+                <th>RL Strategy</th>
+                <th>Final Cost Score</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
 
-        <td>
-            {% if a.no_show_probability > 0.5 %}
-                <span class="risk-high">🔴 {{ a.no_show_probability }}</span>
-            {% elif a.no_show_probability > 0.2 %}
-                <span class="risk-medium">🟡 {{ a.no_show_probability }}</span>
-            {% else %}
-                <span class="risk-low">🟢 {{ a.no_show_probability }}</span>
-            {% endif %}
-        </td>
+            {% for a in assignments %}
+            <tr>
+                <td>
+                    <div class="patient-cell">
+                        <div class="avatar">{{ a.initials }}</div>
+                        <span class="patient-name">{{ a.patient_name }}</span>
+                    </div>
+                </td>
 
-        <td class="strategy">
-            {{ a.rl_action }}
-        </td>
+                <td><span class="doctor-name">Dr. {{ a.doctor_name }}</span></td>
 
-        <td class="cost">
-            {{ a.final_cost }}
-        </td>
+                <td>
+                    <span class="chip chip-blue">⏱ {{ a.predicted_duration }} min</span>
+                </td>
 
-        <td>
-            {{ a.created_at }}
-        </td>
-    </tr>
-    {% endfor %}
+                <td>
+                    <div class="load-wrap">
+                        <div class="load-track">
+                            <div class="load-fill" data-width="{{ a.load_percent }}"></div>
+                        </div>
+                        <span class="load-val">{{ a.doctor_load }}</span>
+                    </div>
+                </td>
 
-</table>
+                <td>
+                    {% if a.no_show_probability > 0.5 %}
+                        <span class="risk risk-high">🔴 {{ a.no_show_probability }}</span>
+                    {% elif a.no_show_probability > 0.2 %}
+                        <span class="risk risk-medium">🟡 {{ a.no_show_probability }}</span>
+                    {% else %}
+                        <span class="risk risk-low">🟢 {{ a.no_show_probability }}</span>
+                    {% endif %}
+                </td>
 
-<div class="footer-note">
+                <td>
+                    <span class="strategy-badge">◈ {{ a.rl_action }}</span>
+                </td>
+
+                <td>
+                    <span class="cost-val">{{ a.final_cost }}</span>
+                </td>
+
+                <td>
+                    <span class="ts">{{ a.created_at }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+    <div class="footer-icon">🧠</div>
     <p>
-        This system stores real-time Reinforcement Learning decisions including 
-        predicted duration, workload balancing, no-show risk, and final cost optimization.
+        This log captures real-time <strong>Reinforcement Learning</strong> decisions — 
+        including predicted consultation duration, workload balancing across doctors, 
+        no-show risk classification, and final <strong>cost optimization scores</strong>.
     </p>
 </div>
-
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const bars = document.querySelectorAll(".load-fill");
+        bars.forEach(bar => {
+            const width = bar.getAttribute("data-width");
+            bar.style.width = width + "%";
+        });
+    });
+</script>
 </body>
 </html>
