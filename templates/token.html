@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Token Generated</title>
 
     <style>
-   body {
-    margin: 0;
-    font-family: "Segoe UI", Arial, sans-serif;
-    
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    position: relative;
-}
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
 
         .card {
             background: #ffffff;
@@ -76,16 +77,18 @@
         }
 
         .buttons {
-            margin-top: 25px;
-            text-align: center;
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .btn {
             text-decoration: none;
-            padding: 10px 18px;
+            padding: 12px 28px;
             border-radius: 8px;
-            font-size: 14px;
-            margin: 0 8px;
+            font-size: 15px;
+            font-weight: 600;
             transition: all 0.3s ease;
             display: inline-block;
         }
@@ -97,7 +100,7 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
         }
 
         /* Animations */
@@ -107,6 +110,7 @@
                 opacity: 0;
                 transform: translateY(25px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -115,13 +119,15 @@
 
         @keyframes pulse {
             0% {
-                box-shadow: 0 0 0 0 rgba(0,0,0,0.2);
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2);
             }
+
             70% {
-                box-shadow: 0 0 0 10px rgba(0,0,0,0);
+                box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
             }
+
             100% {
-                box-shadow: 0 0 0 0 rgba(0,0,0,0);
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
             }
         }
 
@@ -130,198 +136,216 @@
             border-top: 1px solid #e0e6ed;
             margin: 20px 0;
         }
+
         @keyframes gradientMove {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
-}
-body::before {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.08), transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.06), transparent 40%);
-    pointer-events: none;
-}
-@media (max-width: 600px) {
-    .card {
-        width: 90%;
-        padding: 20px;
-    }
-}
-.ai-box {
-    background: #f4f8ff;
-    padding: 12px;
-    border-left: 4px solid #2a5298;
-    border-radius: 8px;
-    margin-top: 10px;
-    animation: glow 2s infinite alternate;
-}
+            0% {
+                background-position: 0% 50%;
+            }
 
-@keyframes glow {
-    from { box-shadow: 0 0 5px rgba(42,82,152,0.3); }
-    to { box-shadow: 0 0 15px rgba(42,82,152,0.6); }
-}
-.high-alert {
-    margin-top: 15px;
-    padding: 12px;
-    background: #fdecea;
-    color: #c0392b;
-    border-left: 5px solid #e74c3c;
-    border-radius: 6px;
-    font-weight: 600;
-    text-align: center;
-    animation: alertPulse 1.5s infinite;
-}
+            50% {
+                background-position: 100% 50%;
+            }
 
-@keyframes alertPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.6);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
-    }
-}
-.low-alert {
-    margin-top: 15px;
-    padding: 12px;
-    background: #eaf4ff;
-    color: #2a5298;
-    border-left: 5px solid #3498db;
-    border-radius: 6px;
-    font-weight: 600;
-    text-align: center;
-    animation: fadeSlide 0.6s ease;
-}
-.low-alert {
-    margin-top: 15px;
-    padding: 12px;
-    background: #eaf4ff;
-    color: #2a5298;
-    border-left: 5px solid #3498db;
-    border-radius: 6px;
-    font-weight: 600;
-    text-align: center;
-    animation: fadeSlide 0.6s ease;
-}
-.medium-alert {
-    margin-top: 15px;
-    padding: 12px;
-    background: #fff4e5;
-    color: #b9770e;
-    border-left: 5px solid #f39c12;
-    border-radius: 6px;
-    font-weight: 600;
-    text-align: center;
-    animation: fadeSlide 0.6s ease;
-}
-/* HIGH - Emergency Red */
-body.HIGH {
-    background: linear-gradient(270deg, #e4063d, #ce0909, #961116);
-    background-size: 400% 400%;
-    animation: gradientMove 15s ease infinite;
-}
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.06), transparent 40%);
+            pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+
+        .ai-box {
+            background: #f4f8ff;
+            padding: 12px;
+            border-left: 4px solid #2a5298;
+            border-radius: 8px;
+            margin-top: 10px;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px rgba(42, 82, 152, 0.3);
+            }
+
+            to {
+                box-shadow: 0 0 15px rgba(42, 82, 152, 0.6);
+            }
+        }
+
+        .high-alert {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fdecea;
+            color: #c0392b;
+            border-left: 5px solid #e74c3c;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            animation: alertPulse 1.5s infinite;
+        }
+
+        @keyframes alertPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.6);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+            }
+        }
+
+        .low-alert {
+            margin-top: 15px;
+            padding: 12px;
+            background: #eaf4ff;
+            color: #2a5298;
+            border-left: 5px solid #3498db;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            animation: fadeSlide 0.6s ease;
+        }
+
+        .low-alert {
+            margin-top: 15px;
+            padding: 12px;
+            background: #eaf4ff;
+            color: #2a5298;
+            border-left: 5px solid #3498db;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            animation: fadeSlide 0.6s ease;
+        }
+
+        .medium-alert {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff4e5;
+            color: #b9770e;
+            border-left: 5px solid #f39c12;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            animation: fadeSlide 0.6s ease;
+        }
+
+        /* HIGH - Emergency Red */
+        body.HIGH {
+            background: linear-gradient(270deg, #e4063d, #ce0909, #961116);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+        }
 
 
-/* MEDIUM - Warm Yellow */
-body.MEDIUM {
-    background: linear-gradient(270deg, #f7971e, #ffd200, #ffb347);
-    background-size: 400% 400%;
-    animation: gradientMove 15s ease infinite;
-}
+        /* MEDIUM - Warm Yellow */
+        body.MEDIUM {
+            background: linear-gradient(270deg, #f7971e, #ffd200, #ffb347);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+        }
 
-/* LOW - Calm Blue */
-body.LOW {
-    background: linear-gradient(270deg, #1e3c72, #2a5298, #4b6cb7);
-    background-size: 400% 400%;
-    animation: gradientMove 15s ease infinite;
-}
-/* Download Button Changes Based on Priority */
+        /* LOW - Calm Blue */
+        body.LOW {
+            background: linear-gradient(270deg, #1e3c72, #2a5298, #4b6cb7);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+        }
 
-body.HIGH .download {
-    background: linear-gradient(135deg, #8e0000, #ff0000);
-    color: white;
-}
+        /* Download Button Changes Based on Priority */
 
-body.MEDIUM .download {
-    background: linear-gradient(135deg, #f7971e, #ffd200);
-    color: black;
-}
+        body.HIGH .download {
+            background: linear-gradient(135deg, #8e0000, #ff0000);
+            color: white;
+        }
 
-body.LOW .download {
-    background: linear-gradient(135deg, #1e3c72, #4b6cb7);
-    color: white;
-}
+        body.MEDIUM .download {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: black;
+        }
 
-/* Smooth Hover Effect */
-.download:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
-}
+        body.LOW .download {
+            background: linear-gradient(135deg, #1e3c72, #4b6cb7);
+            color: white;
+        }
 
+        /* Smooth Hover Effect */
+        .download:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+        }
     </style>
 </head>
 
 <body class="{{ priority|upper }}">
 
 
-<div class="card">
+    <div class="card">
 
-    <h2>Registration Successful</h2>
+        <h2>Registration Successful</h2>
 
-    <div class="details">
-        <p><strong>Patient ID:</strong> {{ patient_id }}</p>
-        <p><strong>Assigned Doctor:</strong> {{ doctor_name }}</p>
-        <p><strong>Department:</strong> {{ department }}</p>
-        <p><strong>Queue Number:</strong> {{ queue_number }}</p>
-        <p><strong>Estimated Wait Time:</strong> {{ estimated_wait }} mins</p>
+        <div class="details">
+            <p><strong>Patient ID:</strong> {{ patient_id }}</p>
+            <p><strong>Assigned Doctor:</strong> {{ doctor_name }}</p>
+            <p><strong>Department:</strong> {{ department }}</p>
+            <p><strong>Queue Number:</strong> {{ queue_number }}</p>
+            <p><strong>Estimated Wait Time:</strong> {{ estimated_wait }} mins</p>
+        </div>
+
+        <div class="ai-box">
+            🤖 AI Decision: {{ explanation }}
+        </div>
+
+        <hr>
+
+        <p style="text-align:center; font-size:15px;">
+            <strong>Priority:</strong>
+            <span class="priority {{ priority }}">
+                {{ priority }}
+            </span>
+        </p>
+        {% if priority|upper == "HIGH" %}
+        <div class="high-alert">
+            🚨 Emergency Case Detected! Immediate medical attention required.
+        </div>
+
+        {% elif priority|upper == "MEDIUM" %}
+        <div class="medium-alert">
+            ⚠ Moderate Risk Case. Patient will be attended soon.
+        </div>
+
+        {% elif priority|upper == "LOW" %}
+        <div class="low-alert">
+            ✅ Low Risk Case. Standard queue process applied.
+        </div>
+
+        {% endif %}
+
+        <div class="buttons">
+            <a href="/download/{{ patient_id }}" class="btn download">Download Token</a>
+        </div>
+
     </div>
-
-    <div class="ai-box">
-        🤖 AI Decision: {{ explanation }}
-    </div>
-
-    <hr>
-
-    <p style="text-align:center; font-size:15px;">
-        <strong>Priority:</strong>
-        <span class="priority {{ priority }}">
-            {{ priority }}
-        </span>
-    </p>
-{% if priority|upper == "HIGH" %}
-    <div class="high-alert">
-        🚨 Emergency Case Detected! Immediate medical attention required.
-    </div>
-
-{% elif priority|upper == "MEDIUM" %}
-    <div class="medium-alert">
-        ⚠ Moderate Risk Case. Patient will be attended soon.
-    </div>
-
-{% elif priority|upper == "LOW" %}
-    <div class="low-alert">
-        ✅ Low Risk Case. Standard queue process applied.
-    </div>
-
-{% endif %}
-
-    <div class="buttons">
-        <a href="/download/{{ patient_id }}" class="btn download">Download Token</a>
-        <a href="/status/{{ patient_id }}" class="btn status">View Live Status</a>
-    </div>
-
-</div>
 
 </body>
+
 </html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Queue — ExploreX Care</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --teal-primary: #00C6B3;
+            --teal-dark: #00A896;
+            --teal-light: #E0FAF8;
+            --bg: #F0FAFA;
+            --surface: #FFFFFF;
+            --border: #D4F0EE;
+            --text-primary: #1A2E2E;
+            --text-muted: #6B9090;
+            --mono: 'Space Mono', monospace;
+            --sans: 'DM Sans', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: var(--sans);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 4px 24px rgba(0, 198, 179, 0.08);
+        }
+
+        /* Card header strip */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+
+        .card-header-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--teal-primary), var(--teal-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .card-header-text h1 {
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .card-header-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        /* Field group */
+        .field-group {
+            margin-bottom: 24px;
+        }
+
+        .field-label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--teal-dark);
+            pointer-events: none;
+        }
+
+        select {
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            background: var(--teal-light);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 13px 42px 13px 16px;
+            font-family: var(--sans);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--teal-primary);
+            box-shadow: 0 0 0 3px rgba(0, 198, 179, 0.15);
+            background: #FFFFFF;
+        }
+
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Divider with arrow */
+        .step-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+            color: var(--border);
+        }
+
+        .step-divider::before,
+        .step-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .step-divider span {
+            font-size: 1rem;
+            color: var(--teal-primary);
+        }
+
+        /* Step numbers */
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: var(--teal-primary);
+            color: #fff;
+            border-radius: 50%;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        /* Loading spinner inline */
+        .loading-hint {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: var(--teal-dark);
+            margin-top: 8px;
+        }
+
+        .loading-hint.visible {
+            display: flex;
+        }
+
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--border);
+            border-top-color: var(--teal-primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon">🏥</div>
+            <div class="card-header-text">
+                <h1>Live Queue Viewer</h1>
+                <p>Real-time hospital intelligence</p>
+            </div>
+        </div>
+
+        <!-- Department -->
+        <div class="field-group">
+            <label class="field-label" for="departmentSelect">
+                <span class="step-number">1</span> Select Department
+            </label>
+            <div class="select-wrapper">
+                <select id="departmentSelect">
+                    <option value="">Choose a department…</option>
+                    <option>General Medicine</option>
+                    <option>Cardiology</option>
+                    <option>Neurology</option>
+                    <option>Orthopedics</option>
+                    <option>Pediatrics</option>
+                    <option>Emergency</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="step-divider"><span>↓</span></div>
+
+        <!-- Doctor -->
+        <div class="field-group">
+            <label class="field-label" for="doctorSelect">
+                <span class="step-number">2</span> Select Doctor
+            </label>
+            <div class="select-wrapper">
+                <select id="doctorSelect" disabled>
+                    <option value="">Select a department first…</option>
+                </select>
+            </div>
+            <div class="loading-hint" id="loadingHint">
+                <div class="spinner"></div>
+                Fetching doctors…
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const departmentSelect = document.getElementById("departmentSelect");
+        const doctorSelect = document.getElementById("doctorSelect");
+        const loadingHint = document.getElementById("loadingHint");
+
+        departmentSelect.addEventListener("change", function () {
+            const dept = this.value;
+
+            if (!dept) {
+                doctorSelect.innerHTML = "<option value=''>Select a department first…</option>";
+                doctorSelect.disabled = true;
+                return;
+            }
+
+            // Show loading state
+            doctorSelect.disabled = true;
+            doctorSelect.innerHTML = "<option value=''>Loading…</option>";
+            loadingHint.classList.add("visible");
+
+            fetch(`/api/doctors_by_department?department=${encodeURIComponent(dept)}`)
+                .then(response => response.json())
+                .then(data => {
+                    loadingHint.classList.remove("visible");
+                    doctorSelect.innerHTML = "<option value=''>Choose a doctor…</option>";
+                    data.forEach(function (doc) {
+                        const option = document.createElement("option");
+                        option.value = doc.id;
+                        option.textContent = doc.name;
+                        doctorSelect.appendChild(option);
+                    });
+                    doctorSelect.disabled = false;
+                })
+                .catch(() => {
+                    loadingHint.classList.remove("visible");
+                    doctorSelect.innerHTML = "<option value=''>Failed to load — try again</option>";
+                    doctorSelect.disabled = true;
+                });
+        });
+
+        doctorSelect.addEventListener("change", function () {
+            const doctorId = this.value;
+            if (doctorId) {
+                window.location.href = `/live_queue/${doctorId}`;
+            }
+        });
+    </script>
+
+</body>
+</html>
