@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Queue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --teal-primary: #00C6B3;
+            --teal-dark: #00A896;
+            --teal-light: #E0FAF8;
+            --bg: #F0FAFA;
+            --surface: #FFFFFF;
+            --border: #D4F0EE;
+            --text-primary: #1A2E2E;
+            --text-muted: #6B9090;
+            --emergency: #FF4C4C;
+            --emergency-bg: #FFF1F1;
+            --emergency-border: #FFCDD2;
+            --mono: 'Space Mono', monospace;
+            --sans: 'DM Sans', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: var(--sans);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 32px;
+        }
+
+        /* Header */
+        .queue-header {
+            background: linear-gradient(135deg, var(--teal-primary), var(--teal-dark));
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(0, 198, 179, 0.25);
+        }
+
+        .queue-header-left h2 {
+            font-family: var(--mono);
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .queue-header-left h4 {
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: rgba(255,255,255,0.75);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #FFFFFF;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* Section */
+        .queue-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .section-title.emergency {
+            background: var(--emergency-bg);
+            border-color: var(--emergency-border);
+            color: var(--emergency);
+        }
+
+        .section-title.regular {
+            background: var(--teal-light);
+            color: var(--teal-dark);
+        }
+
+        .section-title .icon {
+            font-size: 1.1rem;
+        }
+
+        .badge-count {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+        }
+
+        .emergency .badge-count {
+            background: var(--emergency);
+            color: #fff;
+        }
+
+        .regular .badge-count {
+            background: var(--teal-primary);
+            color: #fff;
+        }
+
+        /* Queue list */
+        .queue-list {
+            list-style: none;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s ease;
+        }
+
+        .queue-item:last-child {
+            border-bottom: none;
+        }
+
+        .queue-item:hover {
+            background: var(--teal-light);
+        }
+
+        .token {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 6px;
+            min-width: 72px;
+            text-align: center;
+        }
+
+        .emergency .token,
+        .emergency-token {
+            background: var(--emergency-bg);
+            color: var(--emergency);
+            border: 1px solid var(--emergency-border);
+        }
+
+        .regular-token {
+            background: var(--teal-light);
+            color: var(--teal-dark);
+            border: 1px solid var(--border);
+        }
+
+        .patient-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .position-indicator {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        /* Empty state */
+        .empty-state {
+            padding: 32px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        /* Refresh indicator */
+        .refresh-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 999px;
+            margin-top: 28px;
+            overflow: hidden;
+        }
+
+        .refresh-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--teal-primary), var(--teal-dark));
+            border-radius: 999px;
+            animation: refill 5s linear infinite;
+        }
+
+        @keyframes refill {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+
+        .refresh-label {
+            text-align: right;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-family: var(--mono);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="queue-header">
+        <div class="queue-header-left">
+            <h2>Live Queue — Dr. {{ doctor.name }}</h2>
+            <h4>Department: {{ doctor.department }}</h4>
+        </div>
+        <div class="live-badge">
+            <span class="live-dot"></span>
+            Live
+        </div>
+    </div>
+
+    <!-- Emergency Queue -->
+    <div class="queue-section">
+        <div class="section-title emergency">
+            <span class="icon">🚑</span>
+            Emergency Queue
+            {% if emergency_patients %}
+                <span class="badge-count">{{ emergency_patients|length }}</span>
+            {% endif %}
+        </div>
+
+        {% if emergency_patients %}
+            <ul class="queue-list">
+                {% for patient in emergency_patients %}
+                    <li class="queue-item">
+                        <span class="token emergency-token">TKN {{ patient.id }}</span>
+                        <span class="patient-name">{{ patient.name }}</span>
+                        <span class="position-indicator">#{{ loop.index }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-state">No emergency patients at this time.</p>
+        {% endif %}
+    </div>
+
+    <!-- Regular Queue -->
+    <div class="queue-section">
+        <div class="section-title regular">
+            <span class="icon">🧍</span>
+            Regular Queue
+            {% if regular_patients %}
+                <span class="badge-count">{{ regular_patients|length }}</span>
+            {% endif %}
+        </div>
+
+        {% if regular_patients %}
+            <ul class="queue-list">
+                {% for patient in regular_patients %}
+                    <li class="queue-item">
+                        <span class="token regular-token">TKN {{ patient.id }}</span>
+                        <span class="patient-name">{{ patient.name }}</span>
+                        <span class="position-indicator">#{{ loop.index }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-state">No waiting patients.</p>
+        {% endif %}
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div class="refresh-bar">
+        <div class="refresh-progress"></div>
+    </div>
+    <p class="refresh-label">Auto-refreshing every 5s</p>
+
+    <script>
+        setInterval(function () {
+            location.reload();
+        }, 5000);
+    </script>
+
+</body>
+</html>

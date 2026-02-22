@@ -1,119 +1,240 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Patient Registration</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
+    <style>
+        .error-msg {
+            color: red;
+            font-size: 13px;
+            margin-top: 3px;
+            display: none;
+        }
+    </style>
+
+    <script>
+        function allowOnlyDigits(input, errorId) {
+            input.value = input.value.replace(/\D/g, "");
+            document.getElementById(errorId).style.display = "none";
+        }
+
+        function copyPhoneToWhatsapp() {
+            const phone = document.getElementById("phone").value;
+            document.getElementById("whatsapp").value = phone;
+        }
+
+        function validateForm() {
+            let valid = true;
+
+            const aadhaar = document.getElementById("aadhaar").value;
+            const phone = document.getElementById("phone").value;
+            const whatsapp = document.getElementById("whatsapp").value;
+
+            if (!/^\d{12}$/.test(aadhaar)) {
+                document.getElementById("aadhaarError").style.display = "block";
+                valid = false;
+            }
+
+            if (!/^\d{10}$/.test(phone)) {
+                document.getElementById("phoneError").style.display = "block";
+                valid = false;
+            }
+
+            if (whatsapp && !/^\d{10}$/.test(whatsapp)) {
+                document.getElementById("whatsappError").style.display = "block";
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        // 🚨 Emergency Logic
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const departmentSelect = document.getElementById("departmentSelect");
+            const vitalsSection = document.getElementById("vitalsSection");
+            const diseaseSection = document.getElementById("diseaseSection");
+
+            const oxygen = document.getElementById("oxygen");
+            const bp = document.getElementById("bp");
+            const temperature = document.getElementById("temperature");
+            const disease = document.getElementById("disease");
+
+            departmentSelect.addEventListener("change", function () {
+
+                if (this.value === "Emergency") {
+
+                    // Hide sections
+                    vitalsSection.style.display = "none";
+                    diseaseSection.style.display = "none";
+
+                    // Remove required
+                    oxygen.required = false;
+                    bp.required = false;
+                    temperature.required = false;
+                    disease.required = false;
+
+                    // Disable inputs
+                    oxygen.disabled = true;
+                    bp.disabled = true;
+                    temperature.disabled = true;
+                    disease.disabled = true;
+
+                    // Clear values
+                    oxygen.value = "";
+                    bp.value = "";
+                    temperature.value = "";
+                    disease.value = "";
+
+                } else {
+
+                    // Show sections
+                    vitalsSection.style.display = "block";
+                    diseaseSection.style.display = "block";
+
+                    // Make required
+                    oxygen.required = true;
+                    bp.required = true;
+                    temperature.required = true;
+                    disease.required = true;
+
+                    // Enable inputs
+                    oxygen.disabled = false;
+                    bp.disabled = false;
+                    temperature.disabled = false;
+                    disease.disabled = false;
+                }
+            });
+
+        });
+    </script>
 </head>
+
 <body>
 
-<div class="form-container">
-    <h1>Patient Registration Form</h1>
+    <div class="form-container">
+        <h1>Patient Registration Form</h1>
 
-    <form method="POST" action="/register">
+        <form method="POST" action="/register" onsubmit="return validateForm()">
 
-        <!-- Basic Details -->
-        <div class="form-group">
-            <label>Name</label>
-            <input type="text" name="name" required>
-        </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" required>
+            </div>
 
-        <div class="form-group">
-            <label>Aadhaar Number (Unique ID)</label>
-            <input type="text" name="aadhaar" required>
-        </div>
+            <div class="form-group">
+                <label>Aadhaar Number</label>
+                <input type="text" id="aadhaar" name="aadhaar" maxlength="12" required
+                    oninput="allowOnlyDigits(this,'aadhaarError')">
+                <div id="aadhaarError" class="error-msg">Aadhaar must be 12 digits</div>
+            </div>
 
-        <div class="form-group">
-            <label>Gender</label>
-            <select name="gender" required>
-                <option value="">Select</option>
-                <option>Male</option>
-                <option>Female</option>
-                <option>Other</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label>Gender</label>
+                <select name="gender" required>
+                    <option value="">Select</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Date of Birth</label>
-            <input type="date" name="dob" required>
-        </div>
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" name="dob" required>
+            </div>
 
-        <div class="form-group">
-            <label>Phone Number</label>
-            <input type="text" name="phone" required>
-        </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="phone" name="phone" maxlength="10" required
+                    oninput="allowOnlyDigits(this,'phoneError'); copyPhoneToWhatsapp();">
+                <div id="phoneError" class="error-msg">Phone must be 10 digits</div>
+            </div>
 
-        <div class="form-group">
-            <label>WhatsApp Number</label>
-            <input type="text" name="whatsapp">
-        </div>
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" placeholder="Enter Email" required>
-        </div>
-        <div class="form-group">
-    <label>Blood Group</label>
-    <select name="blood_group" required>
-        <option value="">Select Blood Group</option>
-        <option value="A+">A+</option>
-        <option value="A-">A-</option>
-        <option value="B+">B+</option>
-        <option value="B-">B-</option>
-        <option value="AB+">AB+</option>
-        <option value="AB-">AB-</option>
-        <option value="O+">O+</option>
-        <option value="O-">O-</option>
-    </select>
-</div>
+            <div class="form-group">
+                <label>WhatsApp Number</label>
+                <input type="text" id="whatsapp" name="whatsapp" maxlength="10"
+                    oninput="allowOnlyDigits(this,'whatsappError')">
+                <div id="whatsappError" class="error-msg">WhatsApp must be 10 digits</div>
+            </div>
 
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email">
+            </div>
 
-        <div class="form-group">
-            <label>Address</label>
-            <textarea name="address" rows="3"></textarea>
-        </div>
+            <div class="form-group">
+                <label>Blood Group</label>
+                <select name="blood_group" required>
+                    <option value="">Select Blood Group</option>
+                    <option>A+</option>
+                    <option>A-</option>
+                    <option>B+</option>
+                    <option>B-</option>
+                    <option>AB+</option>
+                    <option>AB-</option>
+                    <option>O+</option>
+                    <option>O-</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Select Department</label>
-            <select name="department" required>
-                <option value="">Select</option>
-                <option>Cardiology</option>
-                <option>Orthopedics</option>
-                <option>Pediatrics</option>
-                <option>Neurology</option>
-                <option>General Medicine</option>
-            </select>
-        </div>
+            <div class="form-group">
+                <label>Address</label>
+                <textarea name="address" rows="3"></textarea>
+            </div>
 
-        <!-- Vital Signs Section -->
-        <div class="section-title">
-            Vital Signs (For Priority Detection)
-        </div>
+            <div class="form-group">
+                <label>Select Department</label>
+                <select name="department" id="departmentSelect" required>
+                    <option value="">Select Department</option>
+                    <option value="General Medicine">General Medicine</option>
+                    <option value="Cardiology">Cardiology</option>
+                    <option value="Neurology">Neurology</option>
+                    <option value="Orthopedics">Orthopedics</option>
+                    <option value="Pediatrics">Pediatrics</option>
+                    <option value="Emergency">🚨 Emergency</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label>Oxygen Level (SpO2 %)</label>
-            <input type="number" name="oxygen" min="50" max="100" required>
-        </div>
+            <!-- VITALS SECTION -->
+            <div id="vitalsSection">
 
-        <div class="form-group">
-            <label>Blood Pressure (Systolic)</label>
-            <input type="number" name="bp" min="50" max="200" required>
-        </div>
+                <div class="section-title">
+                    Vital Signs (For Priority Detection)
+                </div>
 
-        <div class="form-group">
-            <label>Temperature (°C)</label>
-            <input type="number" name="temperature" step="0.1" min="30" max="45" required>
-        </div>
+                <div class="form-group">
+                    <label>Oxygen Level (SpO2 %)</label>
+                    <input type="number" id="oxygen" name="oxygen" min="50" max="100" required>
+                </div>
 
-        <div class="form-group">
-            <label>Disease / Symptoms</label>
-            <input type="text" name="disease" required>
-        </div>
+                <div class="form-group">
+                    <label>Blood Pressure (Systolic)</label>
+                    <input type="number" id="bp" name="bp" min="50" max="200" required>
+                </div>
 
-        <button type="submit">Register & Get Token</button>
+                <div class="form-group">
+                    <label>Temperature (°C)</label>
+                    <input type="number" id="temperature" name="temperature" step="0.1" min="30" max="45" required>
+                </div>
 
-    </form>
-</div>
+            </div>
+
+            <!-- DISEASE SECTION -->
+            <div id="diseaseSection">
+                <div class="form-group">
+                    <label>Disease / Symptoms</label>
+                    <input type="text" id="disease" name="disease" required>
+                </div>
+            </div>
+
+            <button type="submit">Register & Get Token</button>
+
+        </form>
+    </div>
 
 </body>
 </html>

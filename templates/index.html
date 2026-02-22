@@ -1,381 +1,384 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Smart AI Queue Management</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
-<!-- Aditya -->
-<header class="navbar">
-    <div class="logo"><img src="static/logo.png" alt="Smart Hospital Logo"></div>
-    <div class="nav-buttons">
-        <a href="#" class="nav-link">Home</a>
-        <a href="/register" class="nav-link">Register</a>
-        <a href="/doctor_login" class="nav-link">Doctor Login</a>
-        <a href="#footer"class="nav-link">Contact Us</a>
-        <a href="{{ url_for('admin_login') }}" class="nav-link">Admin Login</a>
-    </div>
-</header>
-
-<section class="hero">
-    <div class="hero-container">
-
-        <!-- LEFT SIDE -->
-        <div class="hero-left">
-            <h1>
-                Smart AI Queue <br>
-                Management System
-            </h1>
-
-            <p>
-                Real-time AI powered patient flow optimization to reduce
-                waiting time and improve hospital efficiency.
-            </p>
-
-            <div class="hero-buttons">
-                <a href="/register" class="btn-primary">Register</a>
-                <a href="#footer" class="btn-secondary">Contact Us</a>
-            </div>
-
-            <div class="hero-stats">
-                <div><strong>10K+</strong><span>Patients</span></div>
-                <div><strong>50+</strong><span>Doctors</span></div>
-                <div><strong>95%</strong><span>Efficiency</span></div>
-            </div>
+    <!-- Aditya -->
+    <header class="navbar">
+        <div class="logo"><img src="static/logo.png" alt="Smart Hospital Logo"></div>
+        <div class="nav-buttons">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/register" class="nav-link">Patient Register</a>
+            <a href="/doctor_login" class="nav-link">Doctor Login</a>
+            <a href="/queue" class="nav-link">Live Queue</a>
+            <a href="{{ url_for('admin_login') }}" class="nav-link">Admin Login</a>
         </div>
+    </header>
 
-        <!-- RIGHT SIDE -->
-        <div class="hero-right">
+    <section class="hero">
+        <div class="hero-container">
+
+            <!-- LEFT SIDE -->
+            <div class="hero-left">
+                <h1>
+                    Smart AI Queue <br>
+                    Management System
+                </h1>
+
+                <p>
+                    Real-time AI powered patient flow optimization to reduce
+                    waiting time and improve hospital efficiency.
+                </p>
+
+                <div class="hero-buttons">
+                    <a href="/user-login" class="btn-primary">Patient Login</a>
+                    <a href="#" class="btn-secondary">Get in Touch</a>
+                </div>
+
+                <div class="hero-stats">
+                    <div><strong>10K+</strong><span>Patients</span></div>
+                    <div><strong>50+</strong><span>Doctors</span></div>
+                    <div><strong>95%</strong><span>Efficiency</span></div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE -->
+            <div class="hero-right">
                 <img src="{{ url_for('static', filename='doctor-team.png')}}" alt="Doctors">
             </div>
-        <div>
+            <div>
 
-    </div>
-</section>
-
-
-
-
-<section class="how-it-works reveal">
-    <h2>How It Works</h2>
-    <div class="cards">
-        <div class="card">
-            <h3>1️⃣ Register Patient</h3>
-            <p>Patients enter vitals & appointment details.</p>
-        </div>
-        <div class="card">
-            <h3>2️⃣ AI Prioritizes</h3>
-            <p>System calculates priority & predicted delay.</p>
-        </div>
-        <div class="card">
-            <h3>3️⃣ Dynamic Optimization</h3>
-            <p>Queue auto-adjusts based on emergencies.</p>
-        </div>
-    </div>
-</section>
-<section class="testimonials">
-    <h2>What Doctors Say</h2>
-
-    <div class="testimonial-container">
-        <div class="testimonial-track">
-
-            <div class="testimonial-card">
-                <p>"Reduced patient chaos by 40% in our OPD."</p>
-                <h4>- Dr. Sharma</h4>
             </div>
+    </section>
 
-            <div class="testimonial-card">
-                <p>"Queue time dropped significantly after AI optimization."</p>
-                <h4>- Dr. Mehta</h4>
+
+
+
+    <section class="how-it-works reveal">
+        <h2>How It Works</h2>
+        <div class="cards">
+            <div class="card">
+                <h3>1️⃣ Register Patient</h3>
+                <p>Patients enter vitals & appointment details.</p>
             </div>
-
-            <div class="testimonial-card">
-                <p>"Improved patient satisfaction instantly."</p>
-                <h4>- Dr. Verma</h4>
+            <div class="card">
+                <h3>2️⃣ AI Prioritizes</h3>
+                <p>System calculates priority & predicted delay.</p>
             </div>
-
-            <div class="testimonial-card">
-                <p>"Best digital transformation we implemented."</p>
-                <h4>- Dr. Kapoor</h4>
-            </div>
-            <div class="testimonial-card">
-                <p>"Reduced patient chaos by 40% in our OPD."</p>
-                <h4>- Dr. Sharma</h4>
-            </div>
-
-            <div class="testimonial-card">
-                <p>"Queue time dropped significantly after AI optimization."</p>
-                <h4>- Dr. Mehta</h4>
-            </div>
-
-            <div class="testimonial-card">
-                <p>"Improved patient satisfaction instantly."</p>
-                <h4>- Dr. Verma</h4>
-            </div>
-
-            <div class="testimonial-card">
-                <p>"Best digital transformation we implemented."</p>
-                <h4>- Dr. Kapoor</h4>
-            </div>
-
-        </div>
-    </div>
-</section>
-<section class="features reveal">
-    <h2>Features</h2>
-
-    <div class="feature-container">
-
-        <div class="feature-card" onclick="toggleFeature(this)">
-            <div class="feature-title">✔ Real-time Delay Prediction</div>
-            <div class="feature-summary">
-                Predicts patient waiting time dynamically using AI
-                based on doctor availability and queue load.
+            <div class="card">
+                <h3>3️⃣ Dynamic Optimization</h3>
+                <p>Queue auto-adjusts based on emergencies.</p>
             </div>
         </div>
+    </section>
+    <section class="testimonials">
+        <h2>What Doctors Say</h2>
 
-        <div class="feature-card" onclick="toggleFeature(this)">
-            <div class="feature-title">✔ Pediatric & Adult Vital Analysis</div>
-            <div class="feature-summary">
-                Evaluates vitals differently for children and adults
-                to determine accurate medical priority.
+        <div class="testimonial-container">
+            <div class="testimonial-track">
+
+                <div class="testimonial-card">
+                    <p>"Reduced patient chaos by 40% in our OPD."</p>
+                    <h4>- Dr. Sharma</h4>
+                </div>
+
+                <div class="testimonial-card">
+                    <p>"Queue time dropped significantly after AI optimization."</p>
+                    <h4>- Dr. Mehta</h4>
+                </div>
+
+                <div class="testimonial-card">
+                    <p>"Improved patient satisfaction instantly."</p>
+                    <h4>- Dr. Verma</h4>
+                </div>
+
+                <div class="testimonial-card">
+                    <p>"Best digital transformation we implemented."</p>
+                    <h4>- Dr. Kapoor</h4>
+                </div>
+                <div class="testimonial-card">
+                    <p>"Reduced patient chaos by 40% in our OPD."</p>
+                    <h4>- Dr. Sharma</h4>
+                </div>
+
+                <div class="testimonial-card">
+                    <p>"Queue time dropped significantly after AI optimization."</p>
+                    <h4>- Dr. Mehta</h4>
+                </div>
+
+                <div class="testimonial-card">
+                    <p>"Improved patient satisfaction instantly."</p>
+                    <h4>- Dr. Verma</h4>
+                </div>
+
+                <div class="testimonial-card">
+                    <p>"Best digital transformation we implemented."</p>
+                    <h4>- Dr. Kapoor</h4>
+                </div>
+
             </div>
         </div>
+    </section>
+    <section class="features reveal">
+        <h2>Features</h2>
 
-        <div class="feature-card" onclick="toggleFeature(this)">
-            <div class="feature-title">✔ Emergency Auto-Reallocation</div>
-            <div class="feature-summary">
-                Automatically shifts queue positions when emergency
-                patients are detected.
+        <div class="feature-container">
+
+            <div class="feature-card" onclick="toggleFeature(this)">
+                <div class="feature-title">✔ Real-time Delay Prediction</div>
+                <div class="feature-summary">
+                    Predicts patient waiting time dynamically using AI
+                    based on doctor availability and queue load.
+                </div>
+            </div>
+
+            <div class="feature-card" onclick="toggleFeature(this)">
+                <div class="feature-title">✔ Pediatric & Adult Vital Analysis</div>
+                <div class="feature-summary">
+                    Evaluates vitals differently for children and adults
+                    to determine accurate medical priority.
+                </div>
+            </div>
+
+            <div class="feature-card" onclick="toggleFeature(this)">
+                <div class="feature-title">✔ Emergency Auto-Reallocation</div>
+                <div class="feature-summary">
+                    Automatically shifts queue positions when emergency
+                    patients are detected.
+                </div>
+            </div>
+
+            <div class="feature-card" onclick="toggleFeature(this)">
+                <div class="feature-title">✔ Doctor Workload Optimization</div>
+                <div class="feature-summary">
+                    Distributes patients intelligently to balance doctor
+                    workload and reduce burnout.
+                </div>
+            </div>
+
+            <div class="feature-card" onclick="toggleFeature(this)">
+                <div class="feature-title">✔ Explainable AI Decisions</div>
+                <div class="feature-summary">
+                    Provides transparent reasoning behind patient
+                    prioritization decisions.
+                </div>
+            </div>
+
+        </div>
+    </section>
+    <section class="about">
+        <div class="about-container">
+            <h2>About Smart Hospital AI</h2>
+
+            <div class="about-box">
+                <p>
+                    <span class="highlight">Smart Hospital AI</span> is an intelligent
+                    queue management system designed to reduce hospital waiting time
+                    using AI-based patient prioritization.
+                </p>
+
+                <p>
+                    The system sorts patients based on their condition, age,
+                    and department to ensure critical cases are handled first.
+                </p>
+
+                <p>
+                    Built using Python Flask, Machine Learning, HTML, and CSS,
+                    this project aims to modernize hospital management systems.
+                </p>
             </div>
         </div>
+    </section>
+    <footer id="footer" class="footer">
 
-        <div class="feature-card" onclick="toggleFeature(this)">
-            <div class="feature-title">✔ Doctor Workload Optimization</div>
-            <div class="feature-summary">
-                Distributes patients intelligently to balance doctor
-                workload and reduce burnout.
+        <div class="footer-container">
+
+            <!-- Column 1: Brand -->
+            <div class="footer-col">
+                <h2 class="footer-logo">ExploreX Care</h2>
+                <p class="footer-tagline">
+                    AI-Powered Queue Management System designed to improve
+                    hospital efficiency and reduce patient waiting time.
+                </p>
+
+                <p class="footer-location">
+                    📍 Gunupur, District Rayagada, Odisha
+                </p>
+
+                <button class="footer-btn">Request a Demo</button>
             </div>
-        </div>
 
-        <div class="feature-card" onclick="toggleFeature(this)">
-            <div class="feature-title">✔ Explainable AI Decisions</div>
-            <div class="feature-summary">
-                Provides transparent reasoning behind patient
-                prioritization decisions.
+            <!-- Column 2: System Features -->
+            <div class="footer-col">
+                <h4>System Features</h4>
+                <a href="#">AI Patient Prioritization</a>
+                <a href="#">Real-Time Queue Tracking</a>
+                <a href="#">PDF Token Generation</a>
+                <a href="#">Doctor Dashboard</a>
+                <a href="#">Admin Panel</a>
             </div>
-        </div>
 
-    </div>
-</section>
-<section class="about">
-    <div class="about-container">
-        <h2>About Smart Hospital AI</h2>
-
-        <div class="about-box">
-            <p>
-                <span class="highlight">Smart Hospital AI</span> is an intelligent
-                queue management system designed to reduce hospital waiting time
-                using AI-based patient prioritization.
-            </p>
-
-            <p>
-                The system sorts patients based on their condition, age,
-                and department to ensure critical cases are handled first.
-            </p>
-
-            <p>
-                Built using Python Flask, Machine Learning, HTML, and CSS,
-                this project aims to modernize hospital management systems.
-            </p>
-        </div>
-    </div>
-</section>
-<footer id="footer" class="footer">
-
-    <div class="footer-container">
-
-        <!-- Column 1: Brand -->
-        <div class="footer-col">
-            <h2 class="footer-logo">ExploreX Care</h2>
-            <p class="footer-tagline">
-                AI-Powered Queue Management System designed to improve
-                hospital efficiency and reduce patient waiting time.
-            </p>
-
-            <p class="footer-location">
-                📍 Gunupur, District Rayagada, Odisha
-            </p>
-
-            <button class="footer-btn">Request a Demo</button>
-        </div>
-
-        <!-- Column 2: System Features -->
-        <div class="footer-col">
-            <h4>System Features</h4>
-            <a href="#">AI Patient Prioritization</a>
-            <a href="#">Real-Time Queue Tracking</a>
-            <a href="#">PDF Token Generation</a>
-            <a href="#">Doctor Dashboard</a>
-            <a href="#">Admin Panel</a>
-        </div>
-
-        <!-- Column 3: Project -->
-        <div class="footer-col">
-            <h4>Project</h4>
-            <a href="#about">About Project</a>
-            <a href="#">How It Works</a>
-            <a href="#">Technologies Used</a>
-            <a href="#">GitHub Repository</a>
-            <a href="#">Demo Video</a>
-        </div>
-
-        <!-- Column 4: Technologies -->
-        <div class="footer-col">
-            <h4>Technologies</h4>
-            <p>Python Flask</p>
-            <p>Scikit-Learn</p>
-            <p>HTML & CSS</p>
-            <p>SQLite Database</p>
-        </div>
-
-        <!-- Column 5: Contact -->
-        <div class="footer-col">
-            <h4>Contact Us</h4>
-            <p>📧 teamexplorex19@gmail.com</p>
-            <p>📱 +91 90406 68151</p>
-            <p>🏥 Smart AI Healthcare System</p>
-
-            <div class="social-links">
-                <a href="#">Facebook</a>
-                <a href="#">LinkedIn</a>
-                <a href="#">X</a>
+            <!-- Column 3: Project -->
+            <div class="footer-col">
+                <h4>Project</h4>
+                <a href="#about">About Project</a>
+                <a href="#">How It Works</a>
+                <a href="#">Technologies Used</a>
+                <a href="#">GitHub Repository</a>
+                <a href="#">Demo Video</a>
             </div>
+
+            <!-- Column 4: Technologies -->
+            <div class="footer-col">
+                <h4>Technologies</h4>
+                <p>Python Flask</p>
+                <p>Scikit-Learn</p>
+                <p>HTML & CSS</p>
+                <p>SQLite Database</p>
+            </div>
+
+            <!-- Column 5: Contact -->
+            <div class="footer-col">
+                <h4>Contact Us</h4>
+                <p>📧 teamexplorex19@gmail.com</p>
+                <p>📱 +91 90406 68151</p>
+                <p>🏥 Smart AI Healthcare System</p>
+
+                <div class="social-links">
+                    <a href="#">Facebook</a>
+                    <a href="#">LinkedIn</a>
+                    <a href="#">X</a>
+                </div>
+            </div>
+
         </div>
 
-    </div>
+        <!-- Bottom Section -->
+        <div class="footer-bottom">
+            <p>© 2026 Smart Hospital AI | Built using AI to improve healthcare efficiency.</p>
+        </div>
 
-    <!-- Bottom Section -->
-    <div class="footer-bottom">
-        <p>© 2026 Smart Hospital AI | Built using AI to improve healthcare efficiency.</p>
-    </div>
+    </footer>
 
-</footer>
+    <script>
+        window.addEventListener("scroll", function () {
+            const navbar = document.querySelector(".navbar");
+            navbar.classList.toggle("scrolled", window.scrollY > 50);
+        });
+    </script>
+    <script>
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll(".reveal");
 
-<script>
-window.addEventListener("scroll", function() {
-    const navbar = document.querySelector(".navbar");
-    navbar.classList.toggle("scrolled", window.scrollY > 50);
-});
-</script>
-<script>
-function revealOnScroll() {
-    const reveals = document.querySelectorAll(".reveal");
+            reveals.forEach(element => {
+                const windowHeight = window.innerHeight;
+                const elementTop = element.getBoundingClientRect().top;
+                const revealPoint = 100;
 
-    reveals.forEach(element => {
-        const windowHeight = window.innerHeight;
-        const elementTop = element.getBoundingClientRect().top;
-        const revealPoint = 100;
-
-        if (elementTop < windowHeight - revealPoint) {
-            element.classList.add("active");
-        }
-    });
-}
-
-window.addEventListener("scroll", revealOnScroll);
-</script>
-<script>
-const counters = document.querySelectorAll('.counter');
-
-counters.forEach(counter => {
-    counter.innerText = '0';
-
-    const updateCounter = () => {
-        const target = +counter.getAttribute('data-target');
-        const count = +counter.innerText;
-
-        const increment = target / 100;
-
-        if (count < target) {
-            counter.innerText = Math.ceil(count + increment);
-            setTimeout(updateCounter, 20);
-        } else {
-            counter.innerText = target;
-        }
-    };
-
-    updateCounter();
-});
-</script>
-<script>
-const circles = document.querySelectorAll(".circle");
-
-circles.forEach(circle => {
-    const counter = circle.querySelector(".counter");
-    const target = +circle.getAttribute("data-target");
-    const suffix = circle.getAttribute("data-suffix");
-    const finalPercent = +circle.getAttribute("style")
-        .match(/--percentage:\s*(\d+)/)[1];
-
-    let count = 0;
-    const duration = 2000;
-    const increment = target / (duration / 16);
-
-    function updateCounter() {
-        count += increment;
-
-        if (count >= target) {
-            count = target;
+                if (elementTop < windowHeight - revealPoint) {
+                    element.classList.add("active");
+                }
+            });
         }
 
-        counter.innerText = Math.floor(count) + suffix;
+        window.addEventListener("scroll", revealOnScroll);
+    </script>
+    <script>
+        const counters = document.querySelectorAll('.counter');
 
-        // Fill based on percentage, not target
-        const progress = (count / target) * finalPercent;
+        counters.forEach(counter => {
+            counter.innerText = '0';
 
-        circle.style.background = `conic-gradient(
+            const updateCounter = () => {
+                const target = +counter.getAttribute('data-target');
+                const count = +counter.innerText;
+
+                const increment = target / 100;
+
+                if (count < target) {
+                    counter.innerText = Math.ceil(count + increment);
+                    setTimeout(updateCounter, 20);
+                } else {
+                    counter.innerText = target;
+                }
+            };
+
+            updateCounter();
+        });
+    </script>
+    <script>
+        const circles = document.querySelectorAll(".circle");
+
+        circles.forEach(circle => {
+            const counter = circle.querySelector(".counter");
+            const target = +circle.getAttribute("data-target");
+            const suffix = circle.getAttribute("data-suffix");
+            const finalPercent = +circle.getAttribute("style")
+                .match(/--percentage:\s*(\d+)/)[1];
+
+            let count = 0;
+            const duration = 2000;
+            const increment = target / (duration / 16);
+
+            function updateCounter() {
+                count += increment;
+
+                if (count >= target) {
+                    count = target;
+                }
+
+                counter.innerText = Math.floor(count) + suffix;
+
+                // Fill based on percentage, not target
+                const progress = (count / target) * finalPercent;
+
+                circle.style.background = `conic-gradient(
             #0077cc ${progress}%,
             #e6f2ff ${progress}%
         )`;
 
-        if (count < target) {
-            requestAnimationFrame(updateCounter);
-        }
-    }
-
-    updateCounter();
-});
-</script>
-<script>
-function toggleFeature(card) {
-
-    const allCards = document.querySelectorAll(".feature-card");
-
-    allCards.forEach(c => {
-        if (c !== card) {
-            c.classList.remove("active");
-        }
-    });
-
-    card.classList.toggle("active");
-}
-</script>
-<script>
-    const footerCols = document.querySelectorAll('.footer-col');
-
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('show');
+                if (count < target) {
+                    requestAnimationFrame(updateCounter);
+                }
             }
-        });
-    }, { threshold: 0.2 });
 
-    footerCols.forEach(col => {
-        observer.observe(col);
-    });
-</script>
+            updateCounter();
+        });
+    </script>
+    <script>
+        function toggleFeature(card) {
+
+            const allCards = document.querySelectorAll(".feature-card");
+
+            allCards.forEach(c => {
+                if (c !== card) {
+                    c.classList.remove("active");
+                }
+            });
+
+            card.classList.toggle("active");
+        }
+    </script>
+    <script>
+        const footerCols = document.querySelectorAll('.footer-col');
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                }
+            });
+        }, { threshold: 0.2 });
+
+        footerCols.forEach(col => {
+            observer.observe(col);
+        });
+    </script>
 
 </body>
+
 </html>

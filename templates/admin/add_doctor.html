@@ -3,48 +3,54 @@
 
 <head>
     <title>Add Doctor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Nunito+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
 
     <style>
         :root {
-            --teal:         #00bbcc;
-            --teal-dark:    #009aab;
-            --teal-darker:  #007a88;
-            --teal-soft:    rgba(0, 187, 204, 0.10);
-            --teal-soft2:   rgba(0, 187, 204, 0.05);
-            --teal-glow:    rgba(0, 187, 204, 0.30);
-            --teal-border:  rgba(0, 187, 204, 0.22);
+            --teal: #00bbcc;
+            --teal-dark: #009aab;
+            --teal-darker: #007a88;
+            --teal-soft: rgba(0, 187, 204, 0.10);
+            --teal-soft2: rgba(0, 187, 204, 0.05);
+            --teal-glow: rgba(0, 187, 204, 0.30);
+            --teal-border: rgba(0, 187, 204, 0.22);
             --grad-primary: linear-gradient(135deg, #00bbcc 0%, #00e5c8 100%);
-            --grad-deep:    linear-gradient(135deg, #007a88 0%, #00bbcc 100%);
+            --grad-deep: linear-gradient(135deg, #007a88 0%, #00bbcc 100%);
             --grad-emerald: linear-gradient(135deg, #00bbcc 0%, #10b981 100%);
 
-            --bg-main:      #f0fbfc;
-            --bg-wash:      #e6f8fa;
-            --card-bg:      #ffffff;
+            --bg-main: #f0fbfc;
+            --bg-wash: #e6f8fa;
+            --card-bg: #ffffff;
 
-            --text-main:    #071e22;
-            --text-sub:     #1a3d42;
-            --text-muted:   #7a9fa5;
-            --text-light:   #b8d4d8;
+            --text-main: #071e22;
+            --text-sub: #1a3d42;
+            --text-muted: #7a9fa5;
+            --text-light: #b8d4d8;
 
-            --border:       #d4eef1;
-            --border-strong:#b0dde3;
+            --border: #d4eef1;
+            --border-strong: #b0dde3;
 
-            --emerald:      #10b981;
+            --emerald: #10b981;
             --emerald-soft: rgba(16, 185, 129, 0.10);
             --emerald-glow: rgba(16, 185, 129, 0.25);
 
-            --shadow-soft:  0 4px 24px rgba(0, 100, 110, 0.08);
+            --shadow-soft: 0 4px 24px rgba(0, 100, 110, 0.08);
             --shadow-hover: 0 20px 50px rgba(0, 100, 110, 0.13);
-            --shadow-teal:  0 8px 28px rgba(0, 187, 204, 0.30);
+            --shadow-teal: 0 8px 28px rgba(0, 187, 204, 0.30);
 
             --radius-sm: 10px;
-            --radius:    14px;
+            --radius: 14px;
             --radius-lg: 22px;
         }
 
-        *, *::before, *::after {
-            margin: 0; padding: 0; box-sizing: border-box;
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
@@ -64,8 +70,8 @@
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(ellipse 65% 55% at 90% 5%,  rgba(0, 187, 204, 0.09) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 45% at 5%  90%,  rgba(0, 229, 200, 0.07) 0%, transparent 60%);
+                radial-gradient(ellipse 65% 55% at 90% 5%, rgba(0, 187, 204, 0.09) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 45% at 5% 90%, rgba(0, 229, 200, 0.07) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
         }
@@ -85,8 +91,15 @@
         }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Teal top stripe */
@@ -198,7 +211,10 @@
             -webkit-appearance: none;
         }
 
-        input::placeholder { color: var(--text-muted); font-size: 13.5px; }
+        input::placeholder {
+            color: var(--text-muted);
+            font-size: 13.5px;
+        }
 
         input:focus,
         select:focus {
@@ -223,7 +239,10 @@
             pointer-events: none;
         }
 
-        select { cursor: pointer; padding-right: 36px; }
+        select {
+            cursor: pointer;
+            padding-right: 36px;
+        }
 
         /* Time row */
         .time-row {
@@ -232,14 +251,18 @@
             gap: 14px;
         }
 
-        .time-row .form-group { margin-bottom: 0; }
+        .time-row .form-group {
+            margin-bottom: 0;
+        }
 
         /* Password input wrapper */
         .input-wrap {
             position: relative;
         }
 
-        .input-wrap input { padding-right: 44px; }
+        .input-wrap input {
+            padding-right: 44px;
+        }
 
         .input-wrap .eye-btn {
             position: absolute;
@@ -257,7 +280,9 @@
             align-items: center;
         }
 
-        .input-wrap .eye-btn:hover { color: var(--teal-dark); }
+        .input-wrap .eye-btn:hover {
+            color: var(--teal-dark);
+        }
 
         /* ── Buttons ── */
         .card-footer {
@@ -291,7 +316,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.16) 0%, transparent 100%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, transparent 100%);
             pointer-events: none;
         }
 
@@ -357,6 +382,7 @@
                             <option value="Orthopedics">Orthopedics</option>
                             <option value="Pediatrics">Pediatrics</option>
                             <option value="Neurology">Neurology</option>
+                            <option value="Emergency">🚨 Emergency</option>
                         </select>
                     </div>
                 </div>
@@ -381,7 +407,8 @@
                 <div class="form-group">
                     <label>Password <span class="req">*</span></label>
                     <div class="input-wrap">
-                        <input type="password" name="password" id="passwordInput" placeholder="Set a strong password" required>
+                        <input type="password" name="password" id="passwordInput" placeholder="Set a strong password"
+                            required>
                         <button type="button" class="eye-btn" onclick="togglePassword()">👁</button>
                     </div>
                 </div>
@@ -409,4 +436,5 @@
     </script>
 
 </body>
+
 </html>

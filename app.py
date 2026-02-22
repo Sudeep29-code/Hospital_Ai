@@ -5,8 +5,9 @@ import mysql.connector
 import os
 import smtplib                     
 from email.message import EmailMessage
+import threading
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import joblib
@@ -15,6 +16,7 @@ import shap
 from statsmodels.tsa.arima.model import ARIMA
 import json
 from flask import flash
+from flask import jsonify
 
 
 
@@ -40,6 +42,32 @@ from reportlab.lib.pagesizes import A4
 app = Flask(__name__)
 app.secret_key = "supersecretkey123"
 
+
+
+
+def get_ordered_queue(department):
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, priority
+        FROM patients
+        WHERE department = %s
+        AND status IN ('waiting', 'emergency')
+        ORDER BY
+          CASE priority
+            WHEN 'HIGH' THEN 1
+            WHEN 'MEDIUM' THEN 2
+            ELSE 3
+          END,
+          created_at ASC
+    """, (department,))
+
+    queue = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    return queue
 # ====== DECORATORS ======
 def admin_required(f):
     def wrapper(*args, **kwargs):
@@ -238,14 +266,6 @@ def add_doctor():
 
     return render_template("admin/add_doctor.html")
 
-
-
-
-
-
-
-
-
 # Edit Doctor
 @app.route("/admin/edit-doctor/<int:doctor_id>", methods=["GET", "POST"])
 @admin_required
@@ -331,19 +351,13 @@ def delete_doctor(doctor_id):
 
     return redirect(url_for("admin_dashboard"))
 
-
-
-
-
-
-
-
-
-@app.route("/admin/force-optimize", methods=['POST'])  # <-- change here
+@app.route("/admin/force-optimize")
 @admin_required
 def force_optimize():
-    run_global_optimization()
-    return {"status": "success"}   # <-- change from redirect to JSON
+
+    run_global_optimization()   # your main optimization function
+
+    return redirect(url_for("admin_dashboard", optimized="1"))
 
 
 @app.route("/admin/assignment-explanations")
@@ -370,10 +384,6 @@ def assignment_explanations():
     return render_template("admin/assignment_explanation.html",
         assignments=data
     )
-
-
-
-
 
 # Admin logout
 @app.route("/admin/logout")
@@ -418,7 +428,6 @@ def ai_control():
     return render_template("admin/ai_control.html", settings=settings)
 
 
-
 # ========================
 # Load AI Model
 # ========================
@@ -442,18 +451,17 @@ duration_explainer = shap.TreeExplainer(model)
 # No-show model (Logistic Regression)
 no_show_explainer = shap.LinearExplainer(no_show_model, np.zeros((1,4)))
 
-
-
-
-
-
 # ========================
-# Priority Logic
+# Priority Logic (UPDATED)
 # ========================
 def calculate_priority(age, oxygen, temp, bp, disease):
 
     disease = disease.lower()
+
+    # Disease categories
     emergency_diseases = ["stroke", "heart attack", "trauma", "sepsis"]
+    pregnancy_keywords = ["pregnancy", "pregnant"]
+    chronic_diseases = ["cancer", "diabetes", "hypertension", "asthma"]
 
     # -------------------------
     # PEDIATRIC CASE (<18)
@@ -474,6 +482,7 @@ def calculate_priority(age, oxygen, temp, bp, disease):
     # -------------------------
     else:
 
+        # 🚑 Absolute emergency override
         if (
             oxygen < 85 or
             temp >= 39.5 or
@@ -483,15 +492,40 @@ def calculate_priority(age, oxygen, temp, bp, disease):
         ):
             return "HIGH"
 
-        elif (
+        # 🤰 Pregnancy logic (IMPORTANT)
+        if any(p in disease for p in pregnancy_keywords):
+            # Pregnancy with danger signs → HIGH
+            if (
+                oxygen < 92 or
+                temp >= 38.5 or
+                bp >= 160 or
+                bp < 90
+            ):
+                return "HIGH"
+            # Pregnancy with normal vitals → MEDIUM
+            return "MEDIUM"
+
+        # 🧬 Chronic diseases (cancer etc.)
+        if any(c in disease for c in chronic_diseases):
+            if (
+                oxygen < 92 or
+                temp >= 38.5 or
+                bp >= 160 or
+                bp < 90
+            ):
+                return "HIGH"
+            return "MEDIUM"
+
+        # ⚠️ Moderate abnormal vitals
+        if (
             85 <= oxygen < 92 or
             38.5 <= temp < 39.5 or
             140 <= bp < 180
         ):
             return "MEDIUM"
 
-        else:
-            return "LOW"
+        # ✅ Normal adult
+        return "LOW"
 
 
 # ========================
@@ -1105,14 +1139,21 @@ def optimize_assignments_graph(department):
     cursor = conn.cursor(dictionary=True)
 
     # ========================
-    # GET WAITING + EMERGENCY PATIENTS
+    # GET ONLY UNASSIGNED PATIENTS
     # ========================
     cursor.execute("""
         SELECT * FROM patients
         WHERE department=%s
         AND status IN ('waiting','emergency')
+        AND doctor_id IS NULL
     """, (department,))
     patients = cursor.fetchall()
+
+    # If no new patients → exit safely
+    if not patients:
+        cursor.close()
+        conn.close()
+        return
 
     # ========================
     # GET ACTIVE DOCTORS
@@ -1124,16 +1165,13 @@ def optimize_assignments_graph(department):
     """, (department,))
     doctors = cursor.fetchall()
 
-    # ========================
-    # SAFETY CHECK
-    # ========================
-    if not patients or not doctors:
+    if not doctors:
         cursor.close()
         conn.close()
         return
 
     # ========================
-    # PRE-CALCULATE DOCTOR LOADS (PERFORMANCE FIX)
+    # PRE-CALCULATE DOCTOR LOADS
     # ========================
     doctor_loads = {}
 
@@ -1147,13 +1185,13 @@ def optimize_assignments_graph(department):
 
     load_data = cursor.fetchall()
 
-    # Initialize all doctors to 0 load
+    # Initialize loads
     for d in doctors:
         doctor_loads[d["id"]] = 0
 
-    # Update with actual loads
     for row in load_data:
-        doctor_loads[row["doctor_id"]] = row["doctor_load"]
+        if row["doctor_id"] is not None:
+            doctor_loads[row["doctor_id"]] = row["doctor_load"]
 
     import numpy as np
     from scipy.optimize import linear_sum_assignment
@@ -1182,7 +1220,6 @@ def optimize_assignments_graph(department):
     for i, p in enumerate(patients):
         for j, d in enumerate(doctors):
 
-            # 🔥 Predicted Duration
             predicted, _ = predict_duration(
                 p["age"],
                 p["oxygen"],
@@ -1193,17 +1230,18 @@ def optimize_assignments_graph(department):
                 p["disease"]
             )
 
-            # 🔥 No-show probability
             no_show = p.get("no_show_probability", 0.1)
             expected_time = predicted * (1 - no_show)
 
-            # 🔥 Doctor load (NO SQL HERE — optimized)
             load = doctor_loads.get(d["id"], 0)
 
-            # 🔥 Emergency bonus
             priority_bonus = -10 if p["priority"] == "HIGH" else 0
 
-            cost = (wait_weight * expected_time) + (fairness_weight * load * 5) + priority_bonus
+            cost = (
+                (wait_weight * expected_time)
+                + (fairness_weight * load * 5)
+                + priority_bonus
+            )
 
             cost_matrix[i][j] = cost
 
@@ -1223,7 +1261,10 @@ def optimize_assignments_graph(department):
         patient_id = patient["id"]
         doctor_id = doctor["id"]
 
-        # Recalculate values for explanation
+        # SAFETY CHECK (extra protection)
+        if patient.get("doctor_id") == doctor_id:
+            continue
+
         predicted, _ = predict_duration(
             patient["age"],
             patient["oxygen"],
@@ -1241,19 +1282,23 @@ def optimize_assignments_graph(department):
 
         priority_bonus = -10 if patient["priority"] == "HIGH" else 0
 
-        final_cost = (wait_weight * expected_time) + (fairness_weight * load * 5) + priority_bonus
+        final_cost = (
+            (wait_weight * expected_time)
+            + (fairness_weight * load * 5)
+            + priority_bonus
+        )
 
-        # 🔥 UPDATE PATIENT
+        # 🔥 Assign doctor (ONLY if NULL before)
         cursor.execute("""
             UPDATE patients
             SET doctor_id=%s
             WHERE id=%s
+            AND doctor_id IS NULL
         """, (doctor_id, patient_id))
 
-        # Update in-memory load
         doctor_loads[doctor_id] += 1
 
-        # 🔥 INSERT EXPLANATION LOG
+        # 🔥 Log explanation
         cursor.execute("""
             INSERT INTO assignment_explanations
             (patient_id, doctor_id, department,
@@ -1283,8 +1328,6 @@ def optimize_assignments_graph(department):
 
     cursor.close()
     conn.close()
-
-
 
 # ========================
 # GLOBAL OPTIMIZATION ENGINE
@@ -1339,7 +1382,6 @@ def continuous_optimizer():
     cursor.close()
     conn.close()
 
-
 scheduler = BackgroundScheduler()
 
 scheduler.add_job(
@@ -1373,13 +1415,11 @@ def doctor_dashboard():
 
     # 🔥 Fetch patients assigned to this doctor
     cursor.execute("""
-        SELECT *
-        FROM patients
-        WHERE doctor_id = %s
-        AND status IN ('waiting', 'emergency')
-        ORDER BY priority_score DESC, id ASC
+    SELECT * FROM patients
+    WHERE doctor_id = %s
+    AND status IN ('waiting','emergency')
+    ORDER BY priority DESC, id ASC
     """, (doctor_id,))
-
 
     patients = cursor.fetchall()
 
@@ -1563,7 +1603,7 @@ def register():
         aadhaar = request.form["aadhaar"]
         gender = request.form["gender"]
         dob = request.form["dob"]
-        disease = request.form["disease"]
+        disease = request.form.get("disease", "")
 
         birth_date = datetime.strptime(dob, "%Y-%m-%d")
         today = datetime.today()
@@ -1577,11 +1617,32 @@ def register():
         address = request.form["address"]
         department = request.form["department"]
 
-        oxygen = float(request.form["oxygen"])
-        bp = float(request.form["bp"])
-        temperature = float(request.form["temperature"])
+        oxygen = request.form.get("oxygen")
+        bp = request.form.get("bp")
+        temperature = request.form.get("temperature")
 
-        priority = calculate_priority(age, oxygen, temperature, bp, disease)
+        # ========================
+        # PRIORITY LOGIC
+        # ========================
+
+        if department == "Emergency":
+            disease = "Emergency Case"
+            oxygen = None
+            bp = None
+            temperature = None
+            priority = "HIGH"
+        else:
+            oxygen = int(oxygen)
+            bp = int(bp)
+            temperature = float(temperature)
+
+            priority = calculate_priority(
+                age,
+                oxygen,
+                temperature,
+                bp,
+                disease
+            )
         status = "emergency" if priority == "HIGH" else "waiting"
 
         # ========================
@@ -1742,6 +1803,9 @@ def emergency_patient(patient_id):
 # ========================
 # Live Status Page
 # ========================
+# ========================
+# Live Status Page
+# ========================
 @app.route("/status/<int:patient_id>")
 def live_status(patient_id):
 
@@ -1751,45 +1815,226 @@ def live_status(patient_id):
     cursor.execute("SELECT * FROM patients WHERE id=%s", (patient_id,))
     patient = cursor.fetchone()
 
-    if not patient:
-        return "Patient not found"
-
-    cursor.execute("""
-        SELECT COUNT(*) as queue_position
-        FROM patients
-        WHERE department=%s
-        AND status='waiting'
-        AND id<=%s
-    """, (patient['department'], patient_id))
-
-    queue = cursor.fetchone()["queue_position"]
-
     cursor.close()
     conn.close()
 
-    predicted_time,_ = predict_duration(
-    patient["age"],
-    patient["oxygen"],
-    patient["bp"],
-    patient["temperature"],
-    patient["department"],
-    patient["priority"],
-    patient["disease"]
-)
+    if not patient:
+        return "Patient not found", 404
 
-    estimated_wait = queue * predicted_time
+    # Get correct ordered queue
+    queue = get_ordered_queue(patient["department"])
+    queue_ids = [p["id"] for p in queue]
 
+    # Safety check
+    if patient_id not in queue_ids:
+        return render_template(
+            "status.html",
+            patient=patient,
+            error="You are no longer in the queue"
+        )
+
+    queue_position = queue_ids.index(patient_id) + 1
+    now_serving = queue_ids[0] if queue_ids else None
+
+    predicted_time, _ = predict_duration(
+        patient["age"],
+        patient["oxygen"],
+        patient["bp"],
+        patient["temperature"],
+        patient["department"],
+        patient["priority"],
+        patient["disease"]
+    )
+
+    estimated_wait = (queue_position - 1) * predicted_time
 
     return render_template(
         "status.html",
         patient=patient,
-        queue=queue,
-        wait=estimated_wait
+        queue_position=queue_position,
+        now_serving=now_serving,
+        estimated_wait=round(estimated_wait, 2)
+    )
+
+@app.route("/api/queue_status")
+def queue_status():
+    department = request.args.get("department")
+    patient_id = request.args.get("patient_id")
+
+    if not department or not patient_id:
+        return jsonify({"error": "Missing department or patient id"}), 400
+
+    try:
+        patient_id = int(patient_id)
+    except ValueError:
+        return jsonify({"error": "Invalid patient id"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    # 1️⃣ Get patient
+    cursor.execute("""
+        SELECT * FROM patients
+        WHERE id = %s AND department = %s
+    """, (patient_id, department))
+
+    patient = cursor.fetchone()
+
+    if not patient:
+        cursor.close()
+        conn.close()
+        return jsonify({"error": "Patient not found"}), 404
+
+    # 2️⃣ Get active doctor
+    cursor.execute("""
+        SELECT name
+        FROM doctors
+        WHERE department = %s AND is_active = 1
+        LIMIT 1
+    """, (department,))
+
+    doctor = cursor.fetchone()
+
+    # 3️⃣ Get ordered queue
+    cursor.execute("""
+    SELECT id, name, status, priority
+    FROM patients
+    WHERE department = %s
+      AND status IN ('emergency', 'waiting')
+    ORDER BY
+        CASE
+            WHEN status = 'emergency' THEN 0
+            WHEN priority = 'HIGH' THEN 1
+            WHEN priority = 'MEDIUM' THEN 2
+            ELSE 3
+        END,
+        created_at ASC
+""", (department,))
+
+    queue = cursor.fetchall()
+
+    queue_ids = [p["id"] for p in queue]
+
+    # 🚑 Emergency handling
+    if patient["status"] == "emergency":
+        position = 1
+        estimated_wait = 0
+    else:
+        position = queue_ids.index(patient_id) + 1 if patient_id in queue_ids else None
+        estimated_wait = (position - 1) * 5 if position else 0
+    now_serving = "Emergency Patient" if queue and queue[0]["status"] == "emergency" else (queue[0]["name"] if queue else None)
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        "patient_id": patient["id"],
+        "patient_name": patient["name"],
+        "department": patient["department"],
+        "priority": patient["priority"],
+        "status": patient["status"],
+
+        "is_emergency": patient["status"] == "emergency",
+        "queue_position": position,
+        "estimated_wait": estimated_wait,
+        "now_serving": now_serving,
+        "in_queue": position is not None,
+
+        "doctor_name": doctor["name"] if doctor else "Not Assigned",
+        "doctor_active": "Yes" if doctor else "No"
+    })
+
+# ========================
+# API: Get Active Doctors by Department
+# ========================
+@app.route("/api/doctors_by_department")
+def doctors_by_department():
+
+    department = request.args.get("department")
+
+    if not department:
+        return jsonify({"error": "Department required"}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id, name
+        FROM doctors
+        WHERE department = %s
+        AND is_active = 1
+    """, (department,))
+
+    doctors = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(doctors)
+
+
+
+# ========================
+# Public Live Doctor Queue
+# ========================
+@app.route("/live_queue/<int:doctor_id>")
+def live_doctor_queue(doctor_id):
+
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    # 1️⃣ Get doctor info
+    cursor.execute("""
+        SELECT id, name, department
+        FROM doctors
+        WHERE id = %s
+    """, (doctor_id,))
+    doctor = cursor.fetchone()
+
+    if not doctor:
+        cursor.close()
+        conn.close()
+        return "Doctor not found"
+
+    # 2️⃣ Emergency patients (ONLY this doctor)
+    cursor.execute("""
+        SELECT *
+        FROM patients
+        WHERE doctor_id = %s
+        AND department = %s
+        AND status = 'emergency'
+        ORDER BY created_at ASC
+    """, (doctor_id, doctor["department"]))
+    emergency_patients = cursor.fetchall()
+
+    # 3️⃣ Regular waiting patients (ONLY this doctor)
+    cursor.execute("""
+        SELECT *
+        FROM patients
+        WHERE doctor_id = %s
+        AND department = %s
+        AND status = 'waiting'
+        ORDER BY created_at ASC
+    """, (doctor_id, doctor["department"]))
+    regular_patients = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "live_doctor_queue.html",
+        doctor=doctor,
+        emergency_patients=emergency_patients,
+        regular_patients=regular_patients
     )
 
 # ========================
-# Download Token PDF
+# EXISTING ROUTE (ALREADY THERE)
 # ========================
+@app.route("/queue")
+def queue_page():
+    return render_template("queue.html")
+
 
 # ========================
 # Download Token PDF
@@ -1926,17 +2171,9 @@ def download_token(patient_id):
     elements.append(Spacer(1, 25))
 
     # =========================
-    # PREDICT WAIT TIME
+    # USE STORED CONSULTATION TIME (FASTER)
     # =========================
-    predicted_time, _ = predict_duration(
-        patient["age"],
-        patient["oxygen"],
-        patient["bp"],
-        patient["temperature"],
-        patient["department"],
-        patient["priority"],
-        patient["disease"]
-    )
+    predicted_time = patient.get("consultation_duration", "N/A")
 
     details_data = [
         ["Patient Name", patient["name"]],
@@ -1945,6 +2182,7 @@ def download_token(patient_id):
         ["Estimated Consultation Time", f"{predicted_time} mins"],
         ["Generated At", datetime.now().strftime("%d-%m-%Y %H:%M")]
     ]
+
     details_table = Table(details_data, colWidths=[200, 250])
     details_table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
@@ -1996,14 +2234,19 @@ def download_token(patient_id):
         footer_style
     ))
 
-    # Build PDF with border
+    # Build PDF
     doc.build(elements, onFirstPage=add_page_border)
 
-    # Send Email (if function exists)
-    try:
-        send_email_with_pdf(patient["email"], filepath)
-    except Exception as e:
-        print("Email sending failed:", e)
+    # =========================
+    # SEND EMAIL IN BACKGROUND (NON-BLOCKING)
+    # =========================
+    def send_async_email():
+        try:
+            send_email_with_pdf(patient["email"], filepath)
+        except Exception as e:
+            print("Email sending failed:", e)
+
+    threading.Thread(target=send_async_email).start()
 
     return send_file(filepath, as_attachment=True)
 
@@ -2058,8 +2301,9 @@ def send_email_with_pdf(receiver_email, pdf_path):
 
     except Exception as e:
         print("Email error:", e)
+
 # ========================
-# Run App
+# APP START
 # ========================
 if __name__ == "__main__":
     app.run(debug=True)

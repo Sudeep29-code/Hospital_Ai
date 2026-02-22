@@ -1,21 +1,383 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Login</title>
+    <title>Admin Login – HAIOP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --teal:        #00bbcc;
+            --teal-dark:   #009aab;
+            --teal-deeper: #007a88;
+            --teal-soft:   rgba(0, 187, 204, 0.10);
+            --teal-glow:   rgba(0, 187, 204, 0.28);
+            --teal-border: rgba(0, 187, 204, 0.22);
+            --blue:        #0077cc;
+            --blue-soft:   rgba(0, 119, 204, 0.08);
+            --coral:       #ff6b6b;
+            --emerald:     #10b981;
+            --bg:          #f0fbfc;
+            --white:       #ffffff;
+            --text:        #071e22;
+            --text-sub:    #1a3d42;
+            --text-muted:  #7a9fa5;
+            --border:      #d4eef1;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Teal mesh background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 65% 55% at 85% 10%, rgba(0,187,204,0.11) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 45% at 10% 85%, rgba(0,229,200,0.08) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 35% at 50% 50%, rgba(0,119,204,0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Login card ── */
+        .login-card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            margin: 20px;
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px 44px;
+            box-shadow:
+                0 24px 60px rgba(0, 100, 110, 0.13),
+                0 0 0 1px rgba(0, 187, 204, 0.10);
+            animation: cardUp 0.65s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+            overflow: hidden;
+        }
+
+        /* Teal gradient top bar */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--teal), #00e5c8, var(--teal-dark));
+            background-size: 200% 100%;
+            animation: gradShift 4s ease infinite;
+        }
+
+        /* Soft circle decoration */
+        .login-card::after {
+            content: '';
+            position: absolute;
+            top: -45px; right: -45px;
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            opacity: 0.055;
+            pointer-events: none;
+        }
+
+        /* ── Header ── */
+        .card-header {
+            text-align: center;
+            margin-bottom: 34px;
+        }
+
+        .brand-icon {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 24px var(--teal-glow);
+        }
+
+        .card-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.4px;
+            margin-bottom: 4px;
+        }
+
+        .card-header p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Flash / error ── */
+        .flash-error {
+            background: rgba(255, 107, 107, 0.08);
+            color: #c0392b;
+            border: 1.5px solid rgba(255, 107, 107, 0.22);
+            border-radius: 10px;
+            padding: 11px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ── Field group ── */
+        .field-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 7px;
+        }
+
+        /* ── Input wrap with icon ── */
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 15px;
+            color: var(--text-muted);
+            pointer-events: none;
+            transition: color 0.25s;
+        }
+
+        .input-wrap:focus-within .input-icon {
+            color: var(--teal-dark);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text);
+            background: #f8fafc;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="password"]::placeholder {
+            color: #b8d4d8;
+            font-size: 13px;
+        }
+
+        input[type="text"]:hover,
+        input[type="password"]:hover {
+            border-color: rgba(0, 187, 204, 0.40);
+            background: #f4f9fc;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px var(--teal-soft);
+            background: var(--white);
+            transform: scale(1.008);
+        }
+
+        /* ── Submit button ── */
+        button[type="submit"] {
+            width: 100%;
+            padding: 13px;
+            margin-top: 8px;
+            background: linear-gradient(135deg, var(--teal), #00e5c8);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 20px var(--teal-glow);
+        }
+
+        /* Shine sweep */
+        button[type="submit"]::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+            transition: 0.55s ease;
+        }
+
+        button[type="submit"]:hover::before { left: 100%; }
+
+        button[type="submit"]:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 32px var(--teal-glow);
+        }
+
+        button[type="submit"]:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px var(--teal-glow);
+        }
+
+        /* ── Divider ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 22px 0 0;
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Footer ── */
+        .card-footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .card-footer a {
+            color: var(--teal-dark);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .card-footer a:hover { color: var(--teal); }
+
+        /* ── Security note ── */
+        .security-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+        }
+
+        .security-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--emerald);
+            box-shadow: 0 0 6px rgba(16,185,129,0.5);
+            animation: pulseDot 2s infinite;
+        }
+
+        /* ── Animations ── */
+        @keyframes cardUp {
+            from { opacity: 0; transform: translateY(32px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes gradShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.35; }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+            .login-card { padding: 36px 24px; border-radius: 18px; }
+            .card-header h2 { font-size: 20px; }
+        }
+    </style>
 </head>
 <body>
 
-<h2>Admin Login</h2>
+<div class="login-card">
 
-<form method="POST">
-    Username:
-    <input type="text" name="username" required><br><br>
+    <!-- Header -->
+    <div class="card-header">
+        <div class="brand-icon">🛡️</div>
+        <h2>Admin Login</h2>
+        <p>ExploreX · Secure Admin Portal</p>
+    </div>
 
-    Password:
-    <input type="password" name="password" required><br><br>
+    <!-- Form -->
+    <form method="POST">
 
-    <button type="submit">Login</button>
-</form>
+        <div class="field-group">
+            <label>Username</label>
+            <div class="input-wrap">
+                <input type="text" name="username" placeholder="Enter your username" required>
+                <span class="input-icon">👤</span>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label>Password</label>
+            <div class="input-wrap">
+                <input type="password" name="password" placeholder="Enter your password" required>
+                <span class="input-icon">🔒</span>
+            </div>
+        </div>
+
+        <button type="submit">Login →</button>
+
+    </form>
+
+    <div class="divider">or</div>
+
+    <div class="card-footer">
+        <a href="/">← Return to Home</a>
+    </div>
+
+    <div class="security-note">
+        <span class="security-dot"></span>
+        Secured · Admin Access Only
+    </div>
+
+</div>
 
 </body>
 </html>
