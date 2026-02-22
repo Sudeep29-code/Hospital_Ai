@@ -474,10 +474,66 @@ def calculate_priority(age, oxygen, temp, bp, disease):
     disease = disease.lower()
 
     # Disease categories
-    emergency_diseases = ["stroke", "heart attack", "trauma", "sepsis"]
-    pregnancy_keywords = ["pregnancy", "pregnant"]
-    chronic_diseases = ["cancer", "diabetes", "hypertension", "asthma"]
+    emergency_diseases = [
+    "stroke",
+    "heart attack",
+    "cardiac arrest",
+    "trauma",
+    "sepsis",
+    "anaphylaxis",
+    "severe bleeding",
+    "internal bleeding",
+    "head injury",
+    "brain hemorrhage",
+    "respiratory failure",
+    "acute asthma attack",
+    "shock",
+    "burns",
+    "poisoning",
+    "overdose",
+    "collapsed lung",
+    "seizure",
+    "unconsciousness",
+    "spinal injury"
+    ]
 
+    pregnancy_keywords = [
+        "pregnancy",
+        "pregnant",
+        "labor",
+        "delivery",
+        "contractions",
+        "miscarriage",
+        "ectopic pregnancy",
+        "prenatal",
+        "postpartum",
+        "high risk pregnancy",
+        "preeclampsia",
+        "gestational diabetes"
+    ]
+
+    chronic_diseases = [
+        "cancer",
+        "diabetes",
+        "hypertension",
+        "high blood pressure",
+        "asthma",
+        "copd",
+        "chronic kidney disease",
+        "kidney failure",
+        "heart disease",
+        "coronary artery disease",
+        "arthritis",
+        "epilepsy",
+        "thyroid disorder",
+        "liver disease",
+        "hepatitis",
+        "hiv",
+        "tuberculosis",
+        "obesity",
+        "chronic pain",
+        "autoimmune disease"
+    ]
     # -------------------------
     # PEDIATRIC CASE (<18)
     # -------------------------
